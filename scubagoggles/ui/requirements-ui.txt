@@ -1,0 +1,8 @@
+# ScubaGoggles UI Requirements
+# Additional packages required for the Streamlit-based configuration UI
+
+# Core Streamlit framework for web UI
+streamlit>=1.28.0
+
+# Additional UI components and enhancements
+streamlit-option-menu>=0.3.6
