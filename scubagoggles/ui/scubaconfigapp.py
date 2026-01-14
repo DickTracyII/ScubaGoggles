@@ -1932,8 +1932,6 @@ class ScubaConfigApp:
         # Check authentication specific fields
         auth_method = data.get('auth_method', 'Service Account')
         if auth_method == "Service Account":
-            if not data.get('customerid'):
-                errors.append("Customer ID is required for Service Account authentication")
             if not data.get('subjectemail'):
                 errors.append("Subject Email is required for Service Account authentication")
             if not data.get('credentials'):
