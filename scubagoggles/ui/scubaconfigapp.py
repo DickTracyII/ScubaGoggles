@@ -1,51 +1,88 @@
 """
-Professional ScubaGoggles Configuration Interface
-Styled to match ScubaGear's ScubaConfigApp but for Google Workspace
+ScubaGoggles Configuration Interface - Professional Streamlit Application
+
+This module provides a comprehensive web-based configuration interface for ScubaGoggles,
+a Google Workspace security assessment tool. The interface allows users to:
+
+1. Configure organization information and assessment parameters
+2. Select which Google Workspace products to assess
+3. Manage policy omissions and annotations
+4. Set up break glass users and advanced settings
+5. Export configurations to YAML files
+6. Launch ScubaGoggles assessments directly from the interface
+
+The application is designed to match the styling and functionality of ScubaGear's
+ScubaConfigApp but adapted for Google Workspace environments.
+
+Key Components:
+- Streamlit-based tabbed interface
+- Dynamic policy parsing from baseline markdown files
+- YAML configuration export/import
+- Integration with ScubaGoggles orchestrator
+- Professional styling matching CISA branding
+
+Author: CISA Team
+Compatible with: Streamlit 1.28+, ScubaGoggles 1.0+
 """
 
-import streamlit as st
-import yaml
-from typing import Dict, Any, List
-import os
-from datetime import date
-from pathlib import Path
-import json
-import tempfile
-import subprocess
-import sys
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-import os
+# Import standard library modules for core functionality
+import streamlit as st  # Web application framework for creating the UI  # Web application framework for creating the UI
+import yaml  # YAML parser for reading/writing configuration files
+from typing import Dict, Any, List  # Type hints for better code documentation
+import os  # Operating system interface for file and environment operations
+from datetime import date  # Date handling for assessment timestamps
+from pathlib import Path  # Modern path handling for cross-platform compatibility
+import json  # JSON parsing for structured data handling
+import tempfile  # Temporary file creation for secure file operations
+import subprocess  # Process execution for launching external commands
+import sys  # System-specific parameters and functions for path manipulation
+from typing import Dict, List, Any, Optional  # Additional type hints for complex data structures
 
-# Add current directory to Python path to find ScubaGoggles modules
-current_dir = Path(__file__).parent.parent.parent
+# Dynamic Path Resolution for ScubaGoggles Module Discovery
+# This section handles the complex task of locating and importing ScubaGoggles modules
+# regardless of how the application is launched (standalone, development, or packaged)
+current_dir = Path(__file__).parent.parent.parent  # Navigate up 3 levels to reach project root
+# Ensure the ScubaGoggles package is discoverable by adding to Python path
+# This prevents ImportError when running the UI independently
 if str(current_dir) not in sys.path:
-    sys.path.insert(0, str(current_dir))
+    sys.path.insert(0, str(current_dir))  # Insert at beginning for priority
 
-# Import ScubaGoggles modules
-SCUBAGOGGLES_AVAILABLE = True
+# ScubaGoggles Module Import Strategy with Graceful Degradation
+# This section implements a robust import mechanism that allows the UI to function
+# even when ScubaGoggles modules are not available (e.g., during development or testing)
+
+SCUBAGOGGLES_AVAILABLE = True  # Flag to track if full ScubaGoggles functionality is available
+
 try:
-    from scubagoggles.orchestrator import Orchestrator
-    from scubagoggles.config import UserConfig
-    from scubagoggles.version import Version
-    from scubagoggles.scuba_constants import OPA_VERSION
+    # Attempt to import core ScubaGoggles modules for full functionality
+    from scubagoggles.orchestrator import Orchestrator  # Main assessment orchestration engine
+    from scubagoggles.config import UserConfig  # Configuration management and validation
+    from scubagoggles.version import Version  # Version information and compatibility checks
+    from scubagoggles.scuba_constants import OPA_VERSION  # Open Policy Agent version constants
 except ImportError as e:
+    # Graceful degradation: Create mock classes when ScubaGoggles is not available
+    # This allows the UI to function for configuration creation even without the backend
     SCUBAGOGGLES_AVAILABLE = False
-    # Create mock classes for UI-only functionality
+    
     class MockOrchestrator:
+        """Mock orchestrator class providing basic product information for UI functionality"""
         @staticmethod
         def gws_products():
+            """Return static list of Google Workspace products for UI configuration"""
             return {'gws_baselines': ['gmail', 'drive', 'calendar', 'meet', 'groups', 'chat', 'sites', 'classroom']}
     
     class MockUserConfig:
+        """Mock user configuration class with default values for UI operation"""
         def __init__(self):
-            self.output_dir = "./"
-            self.credentials_file = None
+            self.output_dir = "./"  # Default output directory
+            self.credentials_file = None  # No credentials file specified
     
     class MockVersion:
+        """Mock version class providing basic version information"""
         def __init__(self):
-            self.version = "1.0.0"
+            self.version = "1.0.0"  # Default version number
     
+    # Replace imported classes with mock versions for UI-only operation
     Orchestrator = MockOrchestrator
     UserConfig = MockUserConfig
     Version = MockVersion
@@ -53,37 +90,72 @@ except ImportError as e:
 
 
 class ScubaConfigApp:
-    """ScubaGoggles Configuration Interface"""
+    """ScubaGoggles Configuration Interface - Main Application Class
+    
+    This class encapsulates the entire ScubaGoggles configuration interface,
+    providing a professional Streamlit-based web application for managing
+    Google Workspace security assessment configurations.
+    
+    The application features:
+    - Tabbed interface for different configuration sections
+    - Dynamic policy management from baseline files
+    - YAML configuration export/import capabilities
+    - Integration with ScubaGoggles orchestrator for assessments
+    - Professional styling matching CISA design standards
+    """
     
     def __init__(self):
-        self.user_config = UserConfig()
-        self.version = Version()
-        self.available_policies = self.parse_baseline_policies()
+        """Initialize the ScubaGoggles Configuration Application
         
-        # Initialize session state
+        Sets up the core application components including:
+        - User configuration object for storing settings
+        - Version information for display and compatibility
+        - Parsed baseline policies from markdown files
+        - Streamlit session state for persistent user data
+        
+        The session state maintains all user configurations across
+        page interactions and form submissions.
+        """
+        # Initialize core application objects
+        self.user_config = UserConfig()  # Configuration manager with validation
+        self.version = Version()  # Version information for display
+        self.available_policies = self.parse_baseline_policies()  # Pre-parsed policy data
+        
+        # Initialize Streamlit Session State for Persistent Configuration Data
+        # This ensures user input persists across page interactions and reruns
         if 'config_data' not in st.session_state:
             st.session_state.config_data = {
-                'organization': '',
-                'orgname': '',
-                'orgunitname': '',
-                'subjectemail': '',
-                'customerid': '',
-                'description': '',
-                'environment': 'google_workspace',
-                'baselines': [],
-                'credentials': '',
-                'outputpath': './',
-                'darkmode': False,
-                'quiet': False,
-                'omitpolicy': {},
-                'annotatepolicy': {},
-                'breakglassaccounts': [],
-                'ui_dark_mode': False  # UI dark mode setting
+                # Organization and Assessment Information
+                'organization': '',  # Primary organization name
+                'orgname': '',  # Detailed organization name
+                'orgunitname': '',  # Organizational unit or department
+                'subjectemail': '',  # Assessment contact email
+                'customerid': '',  # Google Workspace customer ID
+                'description': '',  # Assessment description and context
+                
+                # Technical Configuration
+                'environment': 'google_workspace',  # Fixed environment type
+                'baselines': [],  # Selected product baselines for assessment
+                'credentials': '',  # Path to service account credentials
+                'outputpath': './',  # Directory for assessment results
+                
+                # Assessment Behavior Settings
+                'darkmode': False,  # Dark mode preference for reports
+                'quiet': False,  # Suppress verbose output during assessment
+                
+                # Policy Management Configuration
+                'omitpolicy': {},  # Policies to exclude from assessment
+                'annotatepolicy': {},  # Custom annotations for specific policies
+                'breakglassaccounts': [],  # Emergency access user accounts
+                
+                # User Interface Settings
+                'ui_dark_mode': False  # Dark mode for the configuration interface
             }
             
-        # Initialize UI state
+        # Initialize User Interface State for Enhanced User Experience
+        # These settings control the behavior and appearance of the UI
         if 'ui_show_help' not in st.session_state:
-            st.session_state.ui_show_help = False
+            st.session_state.ui_show_help = False  # Toggle for help text visibility
 
     def parse_baseline_policies(self) -> Dict[str, Dict[str, str]]:
         """Parse policies from baseline markdown files"""
@@ -1857,30 +1929,6 @@ class ScubaConfigApp:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    def render_run_tab(self):
-        """Render run assessment tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
-        st.markdown('<h2 class="section-title">Run Assessment</h2>', unsafe_allow_html=True)
-        
-        if SCUBAGOGGLES_AVAILABLE:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("Run ScubaGoggles Assessment", type="primary"):
-                    if self.validate_config():
-                        self.run_assessment()
-                    else:
-                        st.error("Please fix configuration errors before running")
-            
-            with col2:
-                if st.button("Test Configuration"):
-                    self.test_configuration()
-        else:
-            st.warning("ScubaGoggles modules not available. Please install ScubaGoggles to run assessments.")
-            st.info("You can still use this interface to generate configuration files.")
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
     def generate_clean_config(self) -> Dict[str, Any]:
         """Generate clean configuration dictionary"""
         config = {}
@@ -1993,8 +2041,7 @@ class ScubaConfigApp:
             "📝 Annotate Policies", 
             "🚨 Break Glass",
             "⚙️ Advanced",
-            "👁️ Preview", 
-            "🚀 Run ScubaGoggles"
+            "👁️ Preview"
         ])
         
         with tabs[0]:
@@ -2014,9 +2061,6 @@ class ScubaConfigApp:
         
         with tabs[5]:
             self.render_preview_tab()
-        
-        with tabs[6]:
-            self.render_run_tab()
         
         # Status bar
         st.markdown("---")

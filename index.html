@@ -1,46 +1,84 @@
+<!--
+ScubaGoggles Static Web Application - stlite Implementation
+
+This file implements a complete static web application that runs ScubaGoggles
+configuration interface entirely in the browser using stlite technology.
+
+Key Technologies:
+- stlite: Browser-based Streamlit runtime using WebAssembly
+- Pyodide: Python interpreter compiled to WebAssembly
+- GitHub Pages: Static hosting service
+
+Application Architecture:
+1. HTML container with loading/error states
+2. CSS styling for professional appearance
+3. JavaScript stlite mount configuration
+4. Embedded Python Streamlit application
+5. Pre-processed baseline policy data
+
+Conversion Strategy:
+- Original: Server-side Streamlit app requiring Python backend
+- Converted: Client-side stlite app running Python in browser
+- Benefits: Zero hosting cost, global CDN distribution, no server maintenance
+
+Maintenance Notes:
+- Python code is embedded as JavaScript template literal
+- Baseline policy data is pre-processed and embedded
+- stlite version 0.31.0 includes Streamlit 1.21.0
+- Only browser-compatible Python packages can be used
+
+Author: CISA ScubaGoggles Team
+Last Updated: 2026-01-14
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScubaGoggles Configuration Interface</title>
-    <meta name="description" content="Professional ScubaGoggles Configuration Interface for Google Workspace Security Assessment">
+    <!-- Standard HTML5 document metadata -->
+    <meta charset="UTF-8">  <!-- Ensure proper text encoding for international characters -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  <!-- Responsive design for mobile devices -->
+    <title>ScubaGoggles Configuration Interface</title>  <!-- Browser tab title -->
+    <meta name="description" content="Professional ScubaGoggles Configuration Interface for Google Workspace Security Assessment">  <!-- SEO and accessibility description -->
     
-    <!-- stlite CSS -->
+    <!-- stlite Framework CSS - Required for Streamlit components to render correctly -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.0/build/stlite.css" />
     
-    <!-- Custom Styling to match ScubaGear branding -->
+    <!-- Custom Professional Styling - Overrides default stlite styles to match ScubaGear branding -->
     <style>
+        /* Base Body Styling - Clean foundation for the application */
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f5f5;
+            margin: 0;  /* Remove default browser margins */
+            padding: 0;  /* Remove default browser padding */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;  /* Professional font stack */
+            background-color: #f5f5f5;  /* Light gray background */
         }
         
+        /* Loading Screen Styling - Displayed while stlite initializes */
         .loading-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
+            display: flex;  /* Flexbox for easy centering */
+            flex-direction: column;  /* Stack elements vertically */
+            justify-content: center;  /* Center vertically */
+            align-items: center;  /* Center horizontally */
+            min-height: 100vh;  /* Full viewport height */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);  /* Professional gradient */
+            color: white;  /* White text on dark background */
+            text-align: center;  /* Center align text */
         }
         
+        /* Animated Loading Spinner - Visual feedback during initialization */
         .loading-spinner {
-            width: 50px;
+            width: 50px;  /* Fixed spinner size */
             height: 50px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-            margin-bottom: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);  /* Semi-transparent border */
+            border-radius: 50%;  /* Perfect circle */
+            border-top-color: white;  /* Highlighted top border for animation */
+            animation: spin 1s ease-in-out infinite;  /* Continuous rotation */
+            margin-bottom: 20px;  /* Space below spinner */
         }
         
+        /* Keyframe Animation for Spinner - Smooth 360-degree rotation */
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }  /* Full rotation */
         }
         
         .logo {
@@ -55,77 +93,91 @@
             margin-bottom: 30px;
         }
         
+        /* Application Container - Houses the main Streamlit application */
         #stlite-main {
-            height: 100vh;
-            width: 100vw;
+            height: 100vh;  /* Full viewport height for immersive experience */
+            width: 100vw;   /* Full viewport width */
         }
         
+        /* Error Screen Styling - Displayed if stlite fails to load */
         .error-container {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #ff6b6b;
-            color: white;
-            text-align: center;
-            padding: 20px;
+            display: none;  /* Hidden by default, shown via JavaScript on error */
+            flex-direction: column;  /* Vertical stack layout */
+            justify-content: center;  /* Center vertically */
+            align-items: center;     /* Center horizontally */
+            min-height: 100vh;       /* Full screen coverage */
+            background-color: #ff6b6b;  /* Error red background */
+            color: white;            /* White text for contrast */
+            text-align: center;      /* Center align error text */
+            padding: 20px;           /* Padding for mobile devices */
         }
         
+        /* Error Message Container - Constrains width for readability */
         .error-message {
-            max-width: 600px;
-            line-height: 1.6;
+            max-width: 600px;  /* Maximum width for optimal reading */
+            line-height: 1.6;  /* Improved line spacing for readability */
         }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
+    <!-- Loading Screen - Displayed during stlite initialization -->
+    <!-- This provides immediate visual feedback while Python and dependencies load -->
     <div id="loading" class="loading-container">
-        <div class="loading-spinner"></div>
-        <div class="logo">🤿 ScubaGoggles</div>
-        <div class="tagline">Google Workspace Security Assessment Tool</div>
-        <p>Loading Configuration Interface...</p>
-        <p style="font-size: 0.9em; opacity: 0.7;">Please wait while we prepare your security assessment dashboard</p>
+        <div class="loading-spinner"></div>  <!-- Animated spinner for visual interest -->
+        <div class="logo">🤿 ScubaGoggles</div>  <!-- Application branding -->
+        <div class="tagline">Google Workspace Security Assessment Tool</div>  <!-- Descriptive tagline -->
+        <p>Loading Configuration Interface...</p>  <!-- Status message -->
+        <p style="font-size: 0.9em; opacity: 0.7;">Please wait while we prepare your security assessment dashboard</p>  <!-- Additional context -->
     </div>
     
-    <!-- Error Screen -->
+    <!-- Error Screen - Displayed if stlite fails to initialize -->
+    <!-- Provides user-friendly error messages and recovery options -->
     <div id="error" class="error-container">
-        <div class="logo">⚠️ Error</div>
+        <div class="logo">⚠️ Error</div>  <!-- Error icon and text -->
         <div class="error-message">
             <h2>Failed to Load ScubaGoggles Interface</h2>
             <p>There was an error loading the application. This could be due to:</p>
-            <ul style="text-align: left;">
-                <li>Network connectivity issues</li>
+            <ul style="text-align: left;">  <!-- Left-aligned list for better readability -->
+                <li>Network connectivity issues</li>  <!-- Common troubleshooting points -->
                 <li>Browser compatibility problems</li>
                 <li>Temporary service unavailability</li>
             </ul>
             <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: white; color: #ff6b6b; border: none; border-radius: 5px; cursor: pointer;">
-                Retry
+                Retry  <!-- Reload button for recovery attempts -->
             </button>
         </div>
     </div>
     
-    <!-- Main Application Container -->
+    <!-- Main Application Container - Where the Streamlit app will be mounted -->
+    <!-- This div serves as the mount point for the stlite-powered Streamlit application -->
     <div id="stlite-main"></div>
 
     <!-- stlite JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.0/build/stlite.js"></script>
     
     <script>
-        // Configuration for stlite
+        // stlite Configuration and Application Bootstrap
+        // This section configures and launches the Python Streamlit application in the browser
+        
+        // Python Package Requirements - Only packages not pre-installed in stlite
+        // Note: stlite comes with streamlit, numpy, pandas, and other common packages pre-installed
         const requirements = [
-            "pyyaml"
+            "pyyaml"  // YAML parsing library for configuration file handling
         ];
         
-        // Hide loading screen and show error on failure
+        // User Interface State Management Functions
+        // These functions handle the loading and error states of the application
+        
+        // Hide loading screen and display error interface on initialization failure
         function showError() {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error').style.display = 'flex';
+            document.getElementById('loading').style.display = 'none';  // Hide loading animation
+            document.getElementById('error').style.display = 'flex';   // Show error message
         }
         
-        // Hide loading screen and show app on success
+        // Hide loading screen and display main application on successful initialization
         function showApp() {
-            document.getElementById('loading').style.display = 'none';
+            document.getElementById('loading').style.display = 'none';  // Hide loading animation
+            // Note: stlite-main container will automatically show when app mounts
         }
         
         // Mount the Streamlit app
@@ -335,8 +387,8 @@ st.markdown("""
 # Initialize session state
 if 'config' not in st.session_state:
     st.session_state.config = {
-        'organization_name': '',
-        'organization_unit_name': '',
+        'orgname': '',
+        'orgunitname': '',
         'description': '',
         'credentials_file': '',
         'output_dir': './ScubaResults',
@@ -344,9 +396,9 @@ if 'config' not in st.session_state:
         'report_title': 'ScubaGoggles Security Assessment',
         'organization_domain': '',
         'assessment_date': str(date.today()),
-        'omit_policies': [],
-        'annotate_policies': {},
-        'break_glass_users': [],
+        'omitpolicy': [],
+        'annotatepolicy': {},
+        'breakglassaccounts': [],
         'advanced_settings': {}
     }
 
@@ -355,14 +407,13 @@ if 'available_policies' not in st.session_state:
     st.session_state.available_policies = parse_baseline_policies()
 
 # Create tabs matching the existing design
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📋 Main", 
     "🚫 Omit Policies", 
     "📝 Annotate Policies", 
     "🔓 Break Glass", 
     "⚙️ Advanced", 
-    "👁️ Preview", 
-    "🚀 Run ScubaGoggles"
+    "👁️ Preview"
 ])
 
 with tab1:
@@ -394,20 +445,20 @@ with tab1:
     with col1:
         org_name = st.text_input(
             "Organization Name *",
-            value=st.session_state.config['organization_name'],
+            value=st.session_state.config['orgname'],
             placeholder="Department of Example",
             help="Enter your organization's full name"
         )
-        st.session_state.config['organization_name'] = org_name
+        st.session_state.config['orgname'] = org_name
     
     with col2:
         org_unit = st.text_input(
             "Organization Unit Name",
-            value=st.session_state.config['organization_unit_name'],
+            value=st.session_state.config['orgunitname'],
             placeholder="Subdepartment of Example",
             help="Enter your organizational unit or department"
         )
-        st.session_state.config['organization_unit_name'] = org_unit
+        st.session_state.config['orgunitname'] = org_unit
     
     description = st.text_area(
         "Description",
@@ -439,22 +490,22 @@ with tab1:
     with col1:
         if st.button("📱 Select All", use_container_width=True):
             st.session_state.config['products'] = list(available_products.keys())
-            st.rerun()
+            st.experimental_rerun()
     
     with col2:
         if st.button("🎯 Select Core", use_container_width=True):
             st.session_state.config['products'] = ['gmail', 'drive', 'calendar', 'meet']
-            st.rerun()
+            st.experimental_rerun()
     
     with col3:
         if st.button("📧 Email Only", use_container_width=True):
             st.session_state.config['products'] = ['gmail']
-            st.rerun()
+            st.experimental_rerun()
     
     with col4:
         if st.button("❌ Clear All", use_container_width=True):
             st.session_state.config['products'] = []
-            st.rerun()
+            st.experimental_rerun()
     
     # Product checkboxes
     selected_products = []
@@ -543,22 +594,22 @@ with tab2:
                             """, unsafe_allow_html=True)
                         
                         with col2:
-                            is_omitted = policy_id in st.session_state.config.get('omit_policies', [])
+                            is_omitted = policy_id in st.session_state.config.get('omitpolicy', [])
                             
                             if st.button("Omit" if not is_omitted else "Include", 
                                        key=f"omit_{policy_id}",
                                        type="secondary" if not is_omitted else "primary",
                                        use_container_width=True):
                                 if is_omitted:
-                                    st.session_state.config['omit_policies'].remove(policy_id)
+                                    st.session_state.config['omitpolicy'].remove(policy_id)
                                 else:
-                                    if 'omit_policies' not in st.session_state.config:
-                                        st.session_state.config['omit_policies'] = []
-                                    st.session_state.config['omit_policies'].append(policy_id)
-                                st.rerun()
+                                    if 'omitpolicy' not in st.session_state.config:
+                                        st.session_state.config['omitpolicy'] = []
+                                    st.session_state.config['omitpolicy'].append(policy_id)
+                                st.experimental_rerun()
     
     # Show omitted policies summary
-    omitted_policies = st.session_state.config.get('omit_policies', [])
+    omitted_policies = st.session_state.config.get('omitpolicy', [])
     if omitted_policies:
         st.subheader(f"📋 Currently Omitted Policies ({len(omitted_policies)}):")
         for policy in omitted_policies:
@@ -620,14 +671,14 @@ with tab3:
                 )
                 
                 if st.button("💾 Add Annotation", type="primary") and annotation_text.strip():
-                    if 'annotate_policies' not in st.session_state.config:
-                        st.session_state.config['annotate_policies'] = {}
-                    st.session_state.config['annotate_policies'][selected_policy] = annotation_text.strip()
+                    if 'annotatepolicy' not in st.session_state.config:
+                        st.session_state.config['annotatepolicy'] = {}
+                    st.session_state.config['annotatepolicy'][selected_policy] = annotation_text.strip()
                     st.success(f"✅ Annotation added for {selected_policy}")
-                    st.rerun()
+                    st.experimental_rerun()
         
         # Show existing annotations
-        existing_annotations = st.session_state.config.get('annotate_policies', {})
+        existing_annotations = st.session_state.config.get('annotatepolicy', {})
         if existing_annotations:
             st.subheader(f"📝 Current Annotations ({len(existing_annotations)}):")
             
@@ -648,8 +699,8 @@ with tab3:
                 
                 with col2:
                     if st.button("🗑️", key=f"delete_annotation_{policy_id}", help="Delete this annotation"):
-                        del st.session_state.config['annotate_policies'][policy_id]
-                        st.rerun()
+                        del st.session_state.config['annotatepolicy'][policy_id]
+                        st.experimental_rerun()
         else:
             st.info("ℹ️ No policy annotations added yet")
 
@@ -664,20 +715,20 @@ with tab4:
     
     break_glass_text = st.text_area(
         "Break Glass Users",
-        value="\\n".join(st.session_state.config.get('break_glass_users', [])),
+        value="\\n".join(st.session_state.config.get('breakglassaccounts', [])),
         placeholder="Enter email addresses of break glass users, one per line:\\nadmin@example.com\\nemergency@example.com",
         help="Enter email addresses of users with emergency access privileges",
         height=150
     )
     
     if break_glass_text:
-        st.session_state.config['break_glass_users'] = [line.strip() for line in break_glass_text.split('\\n') if line.strip()]
+        st.session_state.config['breakglassaccounts'] = [line.strip() for line in break_glass_text.split('\\n') if line.strip()]
     else:
-        st.session_state.config['break_glass_users'] = []
+        st.session_state.config['breakglassaccounts'] = []
     
-    if st.session_state.config['break_glass_users']:
+    if st.session_state.config['breakglassaccounts']:
         st.subheader("👥 Break Glass Users:")
-        for user in st.session_state.config['break_glass_users']:
+        for user in st.session_state.config['breakglassaccounts']:
             st.write(f"• {user}")
 
 with tab5:
@@ -748,10 +799,10 @@ with tab6:
     
     with col1:
         st.subheader("📊 Configuration Summary")
-        st.metric("Organization", config_summary['organization_name'] or "Not set")
+        st.metric("Organization", config_summary['orgname'] or "Not set")
         st.metric("Products Selected", f"{len(config_summary['products'])}/8")
-        st.metric("Omitted Policies", len(config_summary.get('omit_policies', [])))
-        st.metric("Annotated Policies", len(config_summary.get('annotate_policies', {})))
+        st.metric("Omitted Policies", len(config_summary.get('omitpolicy', [])))
+        st.metric("Annotated Policies", len(config_summary.get('annotatepolicy', {})))
         
     with col2:
         st.subheader("📋 Selected Products")
@@ -762,15 +813,15 @@ with tab6:
             st.write("❌ No products selected")
     
     # Show omitted policies if any
-    if config_summary.get('omit_policies'):
+    if config_summary.get('omitpolicy'):
         st.subheader("🚫 Omitted Policies")
-        for policy in config_summary['omit_policies']:
+        for policy in config_summary['omitpolicy']:
             st.write(f"• {policy}")
     
     # Show annotations if any
-    if config_summary.get('annotate_policies'):
+    if config_summary.get('annotatepolicy'):
         st.subheader("📝 Policy Annotations")
-        for policy_id, annotation in config_summary['annotate_policies'].items():
+        for policy_id, annotation in config_summary['annotatepolicy'].items():
             st.write(f"**{policy_id}:** {annotation}")
     
     # Full configuration display
@@ -786,64 +837,6 @@ with tab6:
         mime="text/yaml",
         use_container_width=True
     )
-
-with tab7:
-    st.header("🚀 Run ScubaGoggles Assessment")
-    st.info("Execute the security assessment with your configuration")
-    
-    # Validation checks
-    st.subheader("✅ Pre-Flight Validation")
-    
-    validation_issues = []
-    
-    if not st.session_state.config['organization_name']:
-        validation_issues.append("❌ Organization name is required")
-    else:
-        st.success("✅ Organization name configured")
-    
-    if not st.session_state.config['products']:
-        validation_issues.append("❌ At least one product must be selected")
-    else:
-        st.success(f"✅ {len(st.session_state.config['products'])} products selected")
-    
-    if not st.session_state.config['credentials_file']:
-        validation_issues.append("❌ Credentials file not specified")
-    else:
-        st.success("✅ Credentials configured")
-    
-    if validation_issues:
-        st.error("Configuration has issues:")
-        for issue in validation_issues:
-            st.write(issue)
-    else:
-        st.success("🎉 Configuration is ready!")
-        
-        # Generate command
-        if st.button("🚀 Generate Run Command", type="primary", use_container_width=True):
-            products_str = " ".join(st.session_state.config['products'])
-            creds_file = st.session_state.config['credentials_file']
-            output_dir = st.session_state.config['output_dir']
-            
-            st.markdown("""
-            ### 🌐 Browser Deployment Note
-            This interface runs in your browser via GitHub Pages. To execute the actual assessment:
-            
-            1. **Download your configuration** (Preview tab)
-            2. **Install ScubaGoggles locally**: \`pip install scubagoggles\`
-            3. **Run with the command below**:
-            """)
-            
-            command = f"""python -m scubagoggles \\\\
-    --credentials "{creds_file}" \\\\
-    --outputdir "{output_dir}" \\\\
-    --productnames {products_str}"""
-            
-            st.code(command, language='bash')
-            
-            # Also provide config file usage
-            st.markdown("### 📄 Or run with configuration file:")
-            config_command = """python -m scubagoggles --config scubagoggles_config.yaml"""
-            st.code(config_command, language='bash')
 
 # Footer
 st.markdown("---")
