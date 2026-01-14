@@ -147,389 +147,501 @@ from pathlib import Path
 
 # Configure page
 st.set_page_config(
-    page_title="ScubaGoggles Configuration",
+    page_title="ScubaGoggles Configuration Editor",
     page_icon="🤿",
     layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={
-        'Get Help': 'https://github.com/cisagov/ScubaGoggles',
-        'Report a bug': "https://github.com/cisagov/ScubaGoggles/issues",
-        'About': "# ScubaGoggles Configuration Interface\\n\\nProfessional configuration tool for Google Workspace security assessments."
-    }
+    initial_sidebar_state="collapsed"
 )
 
-# Header
-st.title("🤿 ScubaGoggles Configuration Interface")
-st.write("Professional Google Workspace Security Assessment Tool")
+# Custom CSS for professional styling to match existing design
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(90deg, #4472C4 0%, #2E5984 100%);
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        color: white;
+        text-align: center;
+    }
+    
+    .main-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .main-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: white;
+        border-radius: 6px;
+        color: #333;
+        font-weight: 500;
+        border: 1px solid #dee2e6;
+        padding: 0 1.5rem;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #4472C4 !important;
+        color: white !important;
+        border-color: #4472C4 !important;
+    }
+    
+    .organization-section {
+        background: #f8f9fa;
+        padding: 2rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border-left: 4px solid #4472C4;
+    }
+    
+    .help-expander {
+        background: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Header matching the existing design
+st.markdown("""
+<div class="main-header">
+    <div class="main-title">🤿 ScubaGoggles Configuration Editor</div>
+    <div class="main-subtitle">Create a configuration file for ScubaGoggles exclusions, annotations, and omissions baseline controls</div>
+</div>
+""", unsafe_allow_html=True)
 
 # Initialize session state
 if 'config' not in st.session_state:
     st.session_state.config = {
+        'organization_name': '',
+        'organization_unit_name': '',
+        'description': '',
         'credentials_file': '',
         'output_dir': './ScubaResults',
         'products': ['gmail', 'drive', 'calendar', 'meet'],
         'report_title': 'ScubaGoggles Security Assessment',
-        'organization_name': '',
         'organization_domain': '',
-        'assessment_date': str(date.today())
+        'assessment_date': str(date.today()),
+        'omit_policies': [],
+        'annotate_policies': {},
+        'break_glass_users': [],
+        'advanced_settings': {}
     }
 
-# Sidebar for navigation
-with st.sidebar:
-    st.title("Configuration Menu")
-    page = st.selectbox(
-        "Select Configuration Section",
-        ["🏠 Overview", "🔐 Authentication", "📊 Products", "📁 Output Settings", "🎯 Assessment Details", "💾 Save/Load Config", "🚀 Run Assessment"]
-    )
+# Create tabs matching the existing design
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "📋 Main", 
+    "🚫 Omit Policies", 
+    "📝 Annotate Policies", 
+    "🔓 Break Glass", 
+    "⚙️ Advanced", 
+    "👁️ Preview", 
+    "🚀 Run ScubaGoggles"
+])
 
-if page == "🏠 Overview":
-    st.header("Welcome to ScubaGoggles")
+with tab1:
+    st.header("Organization Information")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📋 Quick Setup Checklist")
-        st.write("✅ Configure Google Workspace credentials")
-        st.write("✅ Select products to assess")
-        st.write("✅ Set output directory") 
-        st.write("✅ Configure assessment details")
-        st.write("✅ Run security assessment")
-    
-    with col2:
-        st.subheader("🔍 Assessment Products")
-        st.write("ScubaGoggles can assess security configurations for:")
-        st.write("• Gmail Security Settings")
-        st.write("• Google Drive Sharing Policies")
-        st.write("• Calendar Privacy Settings")
-        st.write("• Google Meet Security Controls")
-        st.write("• Groups Management")
-        st.write("• Chat & Spaces Policies")
-        st.write("• Sites Sharing Controls")
-        st.write("• Classroom Security Settings")
-    
-    st.subheader("📊 Current Configuration Status")
-    
-    status_col1, status_col2, status_col3 = st.columns(3)
-    
-    with status_col1:
-        creds_status = "✅ Configured" if st.session_state.config['credentials_file'] else "❌ Not Set"
-        st.metric("Credentials", creds_status)
-    
-    with status_col2:
-        products_count = len(st.session_state.config['products'])
-        st.metric("Products Selected", f"{products_count}/8")
-    
-    with status_col3:
-        output_status = "✅ Set" if st.session_state.config['output_dir'] else "❌ Not Set"
-        st.metric("Output Directory", output_status)
-
-elif page == "🔐 Authentication":
-    st.header("🔐 Google Workspace Authentication")
-    
-    st.write("ScubaGoggles requires a Google Workspace service account with appropriate permissions.")
-    
-    # Credentials file upload
-    uploaded_file = st.file_uploader(
-        "Upload Service Account JSON File",
-        type=['json'],
-        help="Upload your Google Workspace service account credentials file"
-    )
-    
-    if uploaded_file is not None:
-        st.session_state.config['credentials_file'] = uploaded_file.name
-        st.success(f"✅ Credentials file loaded: {uploaded_file.name}")
+    # Help section
+    with st.expander("ℹ️ Help: Organization & Product Selection"):
+        st.markdown("""
+        ### Organization Information
+        Provide details about your organization that will appear in the assessment report.
         
-        try:
-            credentials_data = json.load(uploaded_file)
-            st.info(f"Service Account: {credentials_data.get('type', 'Unknown')}")
-            st.info(f"Project ID: {credentials_data.get('project_id', 'Unknown')}")
-            st.info(f"Client Email: {credentials_data.get('client_email', 'Unknown')}")
-        except:
-            st.error("❌ Invalid credentials file format")
+        ### Product Selection
+        Choose which Google Workspace products to include in your security assessment:
+        - **Gmail**: Email security settings, DLP policies
+        - **Drive**: File sharing policies, external access controls
+        - **Calendar**: Calendar sharing, privacy settings
+        - **Meet**: Meeting security, participant controls
+        - **Groups**: Group management, external member policies
+        - **Chat**: Chat security, external policies
+        - **Sites**: Site sharing policies, publishing settings
+        - **Classroom**: Classroom security, privacy controls
+        """)
     
-    # Manual path input
-    st.subheader("Or specify credentials file path:")
-    creds_path = st.text_input(
-        "Credentials File Path",
-        value=st.session_state.config['credentials_file'],
-        placeholder="/path/to/your/service-account.json"
-    )
-    if creds_path:
-        st.session_state.config['credentials_file'] = creds_path
-
-elif page == "📊 Products":
-    st.header("📊 Google Workspace Products to Assess")
-    
-    available_products = {
-        'gmail': 'Gmail - Email security settings, external sharing, DLP policies',
-        'drive': 'Google Drive - File sharing policies, external access, link sharing settings',
-        'calendar': 'Google Calendar - Calendar sharing, external attendee policies, privacy settings',
-        'meet': 'Google Meet - Meeting security, external participant controls, recording policies',
-        'groups': 'Google Groups - Group management, external member policies, posting permissions',
-        'chat': 'Google Chat - Chat security, external chat policies, history settings',
-        'sites': 'Google Sites - Site sharing policies, external access, publishing settings',
-        'classroom': 'Google Classroom - Classroom security, external teacher policies, student privacy'
-    }
-    
-    st.write("Choose which Google Workspace products you want to include in your security assessment.")
-    
-    # Quick selection buttons
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("Select All"):
-            st.session_state.config['products'] = list(available_products.keys())
-            st.experimental_rerun()
-    
-    with col2:
-        if st.button("Select Core"):
-            st.session_state.config['products'] = ['gmail', 'drive', 'calendar', 'meet']
-            st.experimental_rerun()
-    
-    with col3:
-        if st.button("Clear All"):
-            st.session_state.config['products'] = []
-            st.experimental_rerun()
-    
-    # Product selection
-    selected_products = []
-    
-    for product_key, product_desc in available_products.items():
-        is_selected = st.checkbox(
-            product_desc,
-            value=product_key in st.session_state.config['products'],
-            key=f"product_{product_key}"
-        )
-        
-        if is_selected:
-            selected_products.append(product_key)
-    
-    st.session_state.config['products'] = selected_products
-    
-    if selected_products:
-        st.success(f"✅ Selected Products ({len(selected_products)}/8): {', '.join(selected_products)}")
-
-elif page == "📁 Output Settings":
-    st.header("📁 Output and Reporting Settings")
-    
-    st.write("Specify where ScubaGoggles should save assessment results and reports.")
-    
-    # Output directory
-    output_dir = st.text_input(
-        "Output Directory Path",
-        value=st.session_state.config['output_dir'],
-        placeholder="./ScubaResults",
-        help="Directory where assessment results will be saved"
-    )
-    st.session_state.config['output_dir'] = output_dir
-    
-    # Output format options
-    st.subheader("📊 Report Format Options")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        generate_html = st.checkbox("Generate HTML Report", value=True)
-        generate_json = st.checkbox("Generate JSON Output", value=True)
-    
-    with col2:
-        generate_csv = st.checkbox("Generate CSV Summary", value=False)
-        generate_pdf = st.checkbox("Generate PDF Report", value=False)
-
-elif page == "🎯 Assessment Details":
-    st.header("🎯 Assessment Configuration Details")
-    
-    st.write("Provide details about your organization for the assessment report.")
+    st.markdown('<div class="organization-section">', unsafe_allow_html=True)
     
     # Organization details
     col1, col2 = st.columns(2)
     
     with col1:
         org_name = st.text_input(
-            "Organization Name",
+            "Organization Name *",
             value=st.session_state.config['organization_name'],
-            placeholder="Your Organization Name"
+            placeholder="Department of Example",
+            help="Enter your organization's full name"
         )
         st.session_state.config['organization_name'] = org_name
     
     with col2:
-        org_domain = st.text_input(
-            "Organization Domain",
-            value=st.session_state.config['organization_domain'],
-            placeholder="example.com"
+        org_unit = st.text_input(
+            "Organization Unit Name",
+            value=st.session_state.config['organization_unit_name'],
+            placeholder="Subdepartment of Example",
+            help="Enter your organizational unit or department"
         )
-        st.session_state.config['organization_domain'] = org_domain
+        st.session_state.config['organization_unit_name'] = org_unit
     
-    # Assessment metadata
-    st.subheader("📋 Assessment Metadata")
-    
-    report_title = st.text_input(
-        "Report Title",
-        value=st.session_state.config['report_title'],
-        placeholder="ScubaGoggles Security Assessment"
+    description = st.text_area(
+        "Description",
+        value=st.session_state.config['description'],
+        placeholder="Enter a description for this configuration (optional)",
+        help="Optional description of this assessment configuration",
+        height=100
     )
-    st.session_state.config['report_title'] = report_title
+    st.session_state.config['description'] = description
     
-    assessment_date = st.date_input(
-        "Assessment Date",
-        value=date.today()
-    )
-    st.session_state.config['assessment_date'] = str(assessment_date)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Product Selection
+    st.subheader("📊 Product Selection")
+    
+    available_products = {
+        'gmail': 'Gmail - Email security settings, DLP policies',
+        'drive': 'Google Drive - File sharing policies, external access controls',
+        'calendar': 'Google Calendar - Calendar sharing, privacy settings',
+        'meet': 'Google Meet - Meeting security, participant controls',
+        'groups': 'Google Groups - Group management, external member policies',
+        'chat': 'Google Chat - Chat security, external policies',
+        'sites': 'Google Sites - Site sharing policies, publishing settings',
+        'classroom': 'Google Classroom - Classroom security, privacy controls'
+    }
+    
+    # Quick selection buttons
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if st.button("📱 Select All", use_container_width=True):
+            st.session_state.config['products'] = list(available_products.keys())
+            st.rerun()
+    
+    with col2:
+        if st.button("🎯 Select Core", use_container_width=True):
+            st.session_state.config['products'] = ['gmail', 'drive', 'calendar', 'meet']
+            st.rerun()
+    
+    with col3:
+        if st.button("📧 Email Only", use_container_width=True):
+            st.session_state.config['products'] = ['gmail']
+            st.rerun()
+    
+    with col4:
+        if st.button("❌ Clear All", use_container_width=True):
+            st.session_state.config['products'] = []
+            st.rerun()
+    
+    # Product checkboxes
+    selected_products = []
+    
+    col1, col2 = st.columns(2)
+    
+    products_list = list(available_products.items())
+    mid_point = len(products_list) // 2
+    
+    with col1:
+        for product_key, product_desc in products_list[:mid_point]:
+            is_selected = st.checkbox(
+                product_desc,
+                value=product_key in st.session_state.config['products'],
+                key3+
+                f"product_{product_key}"
+            )
+            if is_selected:
+                selected_products.append(product_key)
+    
+    with col2:
+        for product_key, product_desc in products_list[mid_point:]:
+            is_selected = st.checkbox(
+                product_desc,
+                value=product_key in st.session_state.config['products'],
+                key=f"product_{product_key}"
+            )
+            if is_selected:
+                selected_products.append(product_key)
+    
+    st.session_state.config['products'] = selected_products
+    
+    if selected_products:
+        st.success(f"✅ Selected {len(selected_products)} products: {', '.join([p.title() for p in selected_products])}")
+    else:
+        st.warning("⚠️ Please select at least one product to assess")
 
-elif page == "💾 Save/Load Config":
-    st.header("💾 Configuration Management")
+with tab2:
+    st.header("🚫 Omit Policies")
+    st.info("Configure which security policies to omit from the assessment")
     
-    st.write("Save your current configuration for reuse or load a previously saved configuration.")
+    st.markdown("""
+    ### Policy Omission
+    Use this section to specify which security policies should be excluded from your assessment.
+    This is useful when certain policies are not applicable to your organization or environment.
+    """)
     
-    # Current configuration preview
-    st.subheader("📋 Current Configuration")
-    config_preview = st.session_state.config.copy()
-    st.code(yaml.dump(config_preview, default_flow_style=False), language='yaml')
+    # Omit policies interface
+    omit_text = st.text_area(
+        "Policies to Omit",
+        value="\n".join(st.session_state.config.get('omit_policies', [])),
+        placeholder="Enter policy names to omit, one per line:\nGWS.GMAIL.1.1\nGWS.DRIVE.2.3",
+        help="Enter the specific policy identifiers you want to exclude",
+        height=200
+    )
     
-    # Save configuration
-    st.subheader("💾 Save Configuration")
+    if omit_text:
+        st.session_state.config['omit_policies'] = [line.strip() for line in omit_text.split('\n') if line.strip()]
+    else:
+        st.session_state.config['omit_policies'] = []
+    
+    if st.session_state.config['omit_policies']:
+        st.subheader("📋 Policies to be Omitted:")
+        for policy in st.session_state.config['omit_policies']:
+            st.write(f"• {policy}")
+
+with tab3:
+    st.header("📝 Annotate Policies")
+    st.info("Add custom annotations and notes to specific policies")
+    
+    st.markdown("""
+    ### Policy Annotations
+    Add custom notes, explanations, or exceptions for specific policies in your assessment report.
+    """)
+    
+    # Add annotation interface
+    if st.button("➕ Add New Annotation"):
+        if 'annotation_counter' not in st.session_state:
+            st.session_state.annotation_counter = 0
+        st.session_state.annotation_counter += 1
+    
+    # Display existing annotations
+    annotations = st.session_state.config.get('annotate_policies', {})
+    
+    if 'annotation_counter' in st.session_state:
+        for i in range(st.session_state.annotation_counter):
+            col1, col2, col3 = st.columns([3, 4, 1])
+            
+            with col1:
+                policy_key = st.text_input(
+                    "Policy ID",
+                    key=f"policy_id_{i}",
+                    placeholder="e.g., GWS.GMAIL.1.1"
+                )
+            
+            with col2:
+                annotation_text = st.text_input(
+                    "Annotation",
+                    key=f"annotation_{i}",
+                    placeholder="Custom note or explanation"
+                )
+            
+            with col3:
+                if st.button("🗑️", key=f"delete_{i}", help="Delete this annotation"):
+                    pass  # Handle deletion
+            
+            if policy_key and annotation_text:
+                annotations[policy_key] = annotation_text
+    
+    st.session_state.config['annotate_policies'] = annotations
+
+with tab4:
+    st.header("🔓 Break Glass Users")
+    st.info("Configure emergency access users who may bypass certain policies")
+    
+    st.markdown("""
+    ### Break Glass Access
+    Specify users who have emergency "break glass" access and may legitimately bypass certain security policies.
+    """)
+    
+    break_glass_text = st.text_area(
+        "Break Glass Users",
+        value="\n".join(st.session_state.config.get('break_glass_users', [])),
+        placeholder="Enter email addresses of break glass users, one per line:\nadmin@example.com\nemergency@example.com",
+        help="Enter email addresses of users with emergency access privileges",
+        height=150
+    )
+    
+    if break_glass_text:
+        st.session_state.config['break_glass_users'] = [line.strip() for line in break_glass_text.split('\n') if line.strip()]
+    else:
+        st.session_state.config['break_glass_users'] = []
+    
+    if st.session_state.config['break_glass_users']:
+        st.subheader("👥 Break Glass Users:")
+        for user in st.session_state.config['break_glass_users']:
+            st.write(f"• {user}")
+
+with tab5:
+    st.header("⚙️ Advanced Settings")
+    st.info("Configure advanced assessment options")
+    
+    # Credentials and Output
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("🔐 Authentication")
+        
+        # Credentials file upload
+        uploaded_file = st.file_uploader(
+            "Upload Service Account JSON",
+            type=['json'],
+            help="Upload your Google Workspace service account credentials file"
+        )
+        
+        if uploaded_file is not None:
+            st.session_state.config['credentials_file'] = uploaded_file.name
+            st.success(f"✅ Credentials: {uploaded_file.name}")
+        
+        # Manual path input
+        creds_path = st.text_input(
+            "Or specify credentials path:",
+            value=st.session_state.config['credentials_file'],
+            placeholder="/path/to/service-account.json"
+        )
+        if creds_path:
+            st.session_state.config['credentials_file'] = creds_path
+    
+    with col2:
+        st.subheader("📁 Output Settings")
+        
+        output_dir = st.text_input(
+            "Output Directory",
+            value=st.session_state.config['output_dir'],
+            placeholder="./ScubaResults"
+        )
+        st.session_state.config['output_dir'] = output_dir
+        
+        report_title = st.text_input(
+            "Report Title",
+            value=st.session_state.config['report_title'],
+            placeholder="ScubaGoggles Security Assessment"
+        )
+        st.session_state.config['report_title'] = report_title
+    
+    # Performance Settings
+    st.subheader("⚡ Performance Settings")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        max_threads = st.slider("Max Concurrent Requests", 1, 10, 3)
+        
+    with col2:
+        request_delay = st.slider("Request Delay (seconds)", 0.1, 2.0, 0.5, 0.1)
+
+with tab6:
+    st.header("👁️ Preview Configuration")
+    st.info("Review your complete configuration before saving")
+    
+    # Configuration summary
+    config_summary = st.session_state.config.copy()
     
     col1, col2 = st.columns(2)
     
     with col1:
-        save_filename = st.text_input(
-            "Configuration File Name",
-            value="scubagoggles_config.yaml",
-            placeholder="my_config.yaml"
-        )
-    
+        st.subheader("📊 Configuration Summary")
+        st.metric("Organization", config_summary['organization_name'] or "Not set")
+        st.metric("Products Selected", f"{len(config_summary['products'])}/8")
+        st.metric("Omitted Policies", len(config_summary.get('omit_policies', [])))
+        st.metric("Annotated Policies", len(config_summary.get('annotate_policies', {})))
+        
     with col2:
-        if st.button("💾 Download Configuration"):
-            config_yaml = yaml.dump(st.session_state.config, default_flow_style=False)
-            st.download_button(
-                label="📁 Download YAML File",
-                data=config_yaml,
-                file_name=save_filename,
-                mime="text/yaml"
-            )
-    
-    # Load configuration
-    st.subheader("📁 Load Configuration")
-    
-    uploaded_config = st.file_uploader(
-        "Upload Configuration File",
-        type=['yaml', 'yml'],
-        help="Upload a previously saved ScubaGoggles configuration file"
-    )
-    
-    if uploaded_config is not None:
-        try:
-            loaded_config = yaml.safe_load(uploaded_config)
-            
-            if st.button("🔄 Load This Configuration"):
-                st.session_state.config.update(loaded_config)
-                st.success("✅ Configuration loaded successfully!")
-                st.experimental_rerun()
-            
-            st.subheader("👀 Preview Loaded Configuration")
-            st.code(yaml.dump(loaded_config, default_flow_style=False), language='yaml')
-            
-        except Exception as e:
-            st.error(f"❌ Error loading configuration: {str(e)}")
-
-elif page == "🚀 Run Assessment":
-    st.header("🚀 Run Security Assessment")
-    
-    # Configuration validation
-    st.subheader("✅ Pre-Flight Check")
-    
-    validation_results = []
-    
-    if st.session_state.config['credentials_file']:
-        validation_results.append(("✅", "Credentials configured"))
-    else:
-        validation_results.append(("❌", "Credentials not configured"))
-    
-    if st.session_state.config['products']:
-        validation_results.append(("✅", f"{len(st.session_state.config['products'])} products selected"))
-    else:
-        validation_results.append(("❌", "No products selected"))
-    
-    if st.session_state.config['output_dir']:
-        validation_results.append(("✅", "Output directory configured"))
-    else:
-        validation_results.append(("❌", "Output directory not configured"))
-    
-    for status, message in validation_results:
-        if status == "✅":
-            st.success(f"{status} {message}")
+        st.subheader("📋 Selected Products")
+        if config_summary['products']:
+            for product in config_summary['products']:
+                st.write(f"✅ {product.title()}")
         else:
-            st.error(f"{status} {message}")
+            st.write("❌ No products selected")
     
-    ready_to_run = all(result[0] == "✅" for result in validation_results)
+    # Full configuration display
+    st.subheader("🔧 Full Configuration")
+    config_yaml = yaml.dump(config_summary, default_flow_style=False, sort_keys=False)
+    st.code(config_yaml, language='yaml')
     
-    if ready_to_run:
-        st.success("✅ Ready to Run Assessment - All configuration requirements are met.")
+    # Download button
+    st.download_button(
+        label="💾 Download Configuration File",
+        data=config_yaml,
+        file_name="scubagoggles_config.yaml",
+        mime="text/yaml",
+        use_container_width=True
+    )
+
+with tab7:
+    st.header("🚀 Run ScubaGoggles Assessment")
+    st.info("Execute the security assessment with your configuration")
+    
+    # Validation checks
+    st.subheader("✅ Pre-Flight Validation")
+    
+    validation_issues = []
+    
+    if not st.session_state.config['organization_name']:
+        validation_issues.append("❌ Organization name is required")
+    else:
+        st.success("✅ Organization name configured")
+    
+    if not st.session_state.config['products']:
+        validation_issues.append("❌ At least one product must be selected")
+    else:
+        st.success(f"✅ {len(st.session_state.config['products'])} products selected")
+    
+    if not st.session_state.config['credentials_file']:
+        validation_issues.append("❌ Credentials file not specified")
+    else:
+        st.success("✅ Credentials configured")
+    
+    if validation_issues:
+        st.error("Configuration has issues:")
+        for issue in validation_issues:
+            st.write(issue)
+    else:
+        st.success("🎉 Configuration is ready!")
         
-        st.subheader("📋 Assessment Summary")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Products", len(st.session_state.config['products']))
-        
-        with col2:
-            st.metric("Output Directory", st.session_state.config['output_dir'])
-        
-        with col3:
-            org_name = st.session_state.config.get('organization_name', 'Not specified')
-            st.metric("Organization", org_name if org_name else 'Not specified')
-        
-        if st.session_state.config['products']:
-            products_text = ", ".join([p.title() for p in st.session_state.config['products']])
-            st.info(f"📊 **Products to assess:** {products_text}")
-        
-        if st.button("🚀 **RUN SECURITY ASSESSMENT**"):
-            st.warning("""
-            🌐 **Browser Version Limitation**
-            
-            This is the browser-based interface running on GitHub Pages. 
-            To actually run the assessment, you'll need to:
-            
-            1. **Download your configuration** (using the Save/Load Config page)
-            2. **Install ScubaGoggles locally:** pip install scubagoggles  
-            3. **Run the assessment locally:** python -m scubagoggles --config your_config.yaml
-            
-            Or use this interface to generate the perfect configuration, then export it!
-            """)
-            
-            # Generate command
+        # Generate command
+        if st.button("🚀 Generate Run Command", type="primary", use_container_width=True):
             products_str = " ".join(st.session_state.config['products'])
             creds_file = st.session_state.config['credentials_file']
             output_dir = st.session_state.config['output_dir']
+            
+            st.markdown("""
+            ### 🌐 Browser Deployment Note
+            This interface runs in your browser via GitHub Pages. To execute the actual assessment:
+            
+            1. **Download your configuration** (Preview tab)
+            2. **Install ScubaGoggles locally**: \`pip install scubagoggles\`
+            3. **Run with the command below**:
+            """)
             
             command = f"""python -m scubagoggles \\
     --credentials "{creds_file}" \\
     --outputdir "{output_dir}" \\
     --productnames {products_str}"""
             
-            st.subheader("🖥️ Local Execution Command")
             st.code(command, language='bash')
             
-            st.subheader("📄 Configuration for Local Use")
-            config_for_local = st.session_state.config.copy()
-            st.code(yaml.dump(config_for_local, default_flow_style=False), language='yaml')
-            
-            st.download_button(
-                label="💾 Download Configuration File",
-                data=yaml.dump(config_for_local, default_flow_style=False),
-                file_name="scubagoggles_config.yaml",
-                mime="text/yaml"
-            )
-    
-    else:
-        st.warning("⚠️ Configuration Incomplete - Please complete the configuration using the sidebar menu before running the assessment.")
+            # Also provide config file usage
+            st.markdown("### 📄 Or run with configuration file:")
+            config_command = """python -m scubagoggles --config scubagoggles_config.yaml"""
+            st.code(config_command, language='bash')
 
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; padding: 20px;">
-    🤿 <strong>ScubaGoggles Configuration Interface</strong><br>
-    Professional Google Workspace Security Assessment Tool<br>
+    🤿 <strong>ScubaGoggles Configuration Editor</strong> | 
+    Professional Google Workspace Security Assessment Tool
 </div>
 """, unsafe_allow_html=True)`
                 }
