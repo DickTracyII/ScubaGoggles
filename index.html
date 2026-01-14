@@ -720,14 +720,14 @@ with tab4:
     
     break_glass_text = st.text_area(
         "Break Glass Users",
-        value="\n".join(st.session_state.config.get('breakglassaccounts', [])),
-        placeholder="Enter email addresses of break glass users, one per line:\nadmin@example.com\nemergency@example.com",
+        value="\\n".join(st.session_state.config.get('breakglassaccounts', [])),
+        placeholder="Enter email addresses of break glass users, one per line:\\nadmin@example.com\\nemergency@example.com",
         help="Enter email addresses of users with emergency access privileges",
         height=150
     )
     
     if break_glass_text:
-        st.session_state.config['breakglassaccounts'] = [line.strip() for line in break_glass_text.split('\n') if line.strip()]
+        st.session_state.config['breakglassaccounts'] = [line.strip() for line in break_glass_text.split('\\n') if line.strip()]
     else:
         st.session_state.config['breakglassaccounts'] = []
     
