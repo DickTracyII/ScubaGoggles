@@ -15,6 +15,7 @@ from google.auth.exceptions import RefreshError
 
 from scubagoggles.config import UserConfig
 from scubagoggles.getopa import getopa
+from scubagoggles.ui.launch import launch_ui
 from scubagoggles.orchestrator import Orchestrator, UserRuntimeError
 from scubagoggles.purge import purge_reports
 from scubagoggles.reporter.md_parser import MarkdownParserError
@@ -306,6 +307,14 @@ def get_opa_args(parser: argparse.ArgumentParser, user_config: UserConfig):
                                help = 'Version of OPA to download (default: '
                                    f'{OPA_VERSION})')
 
+def get_ui_config_args(parser: argparse.ArgumentParser, user_config: UserConfig):
+    """Adds the arguments for the "get OPA" parser.
+
+    :param argparse.ArgumentParser parser: argparse object
+    """
+
+    parser.set_defaults(dispatch=launch_ui)
+
 def get_setup_args(parser: argparse.ArgumentParser, user_config: UserConfig):
     """Adds the arguments for the setup parser
 
@@ -484,6 +493,13 @@ def dive():
                                           description=help_msg,
                                           help=help_msg)
     get_opa_args(getopa_parser, user_config)
+
+
+    help_msg = 'Run Config UI in browser'
+    config_parser = subparsers.add_parser('config',
+                                          description=help_msg,
+                                          help=help_msg)
+    get_ui_config_args(config_parser, user_config)
 
     help_msg = 'Purge old ScubaGoggles reports'
     purge_parser = subparsers.add_parser('purge',

@@ -28,6 +28,12 @@ license = "CC0-1.0"
 license-files = ["LICENSE"]
 readme = "README.md"
 
+[project.optional-dependencies]
+ui = [
+    "streamlit>=1.28.0",
+    "streamlit-option-menu>=0.3.6"
+]
+
 [project.scripts]
 scubagoggles = "scubagoggles.main:dive"
 

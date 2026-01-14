@@ -7,9 +7,10 @@ Simple script to start the Streamlit configuration interface
 import subprocess
 import sys
 from pathlib import Path
+import argparse
 
 
-def main():
+def launch_ui(arguments: argparse.Namespace):
     """Launch the ScubaGoggles UI"""
     
     # Determine which app to run
@@ -45,15 +46,16 @@ def main():
             str(app_to_run),
             "--server.address", "localhost",
             "--server.port", "8501",
-            "--browser.gatherUsageStats", "false"
+            "--browser.gatherUsageStats", "false",
+            "--server.showEmailPrompt", "false"
         ]
         
         subprocess.run(cmd)
         
     except ImportError:
         print("❌ Streamlit is not installed!")
-        print("📦 Please install UI requirements:")
-        print("    pip install -r requirements-ui.txt")
+        print("📦 Please reinstall ScubaGoggles with the optional UI dependencies:")
+        print("    pip install scubagoggles[ui]")
         print("📦 Or install streamlit directly:")
         print("    pip install streamlit")
         sys.exit(1)
@@ -65,4 +67,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    launch_ui(parser.parse_args())
