@@ -389,17 +389,15 @@ if 'config' not in st.session_state:
     st.session_state.config = {
         'orgname': '',
         'orgunitname': '',
-        'description': '',
-        'credentials_file': '',
-        'output_dir': './ScubaResults',
-        'products': ['gmail', 'drive', 'calendar', 'meet'],
-        'report_title': 'ScubaGoggles Security Assessment',
-        'organization_domain': '',
-        'assessment_date': str(date.today()),
-        'omitpolicy': [],
-        'annotatepolicy': {},
-        'breakglassaccounts': [],
-        'advanced_settings': {}
+        'Description': '',
+        'baselines': ['gmail', 'drive', 'calendar', 'meet'],
+        'credentials': '',
+        'outputfoldername': './ScubaResults',
+        'outjsonfilename': 'ScubaResults',
+        'outputreportfilename': 'BaselineReports',
+        'omitpolicy': {},
+        'AnnotatePolicy': {},
+        'breakglassaccounts': []
     }
 
 # Parse available policies
@@ -462,12 +460,12 @@ with tab1:
     
     description = st.text_area(
         "Description",
-        value=st.session_state.config['description'],
+        value=st.session_state.config['Description'],
         placeholder="Enter a description for this configuration (optional)",
         help="Optional description of this assessment configuration",
         height=100
     )
-    st.session_state.config['description'] = description
+    st.session_state.config['Description'] = description
     
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -489,22 +487,22 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         if st.button("📱 Select All", use_container_width=True):
-            st.session_state.config['products'] = list(available_products.keys())
+            st.session_state.config['baselines'] = list(available_products.keys())
             st.experimental_rerun()
     
     with col2:
         if st.button("🎯 Select Core", use_container_width=True):
-            st.session_state.config['products'] = ['gmail', 'drive', 'calendar', 'meet']
+            st.session_state.config['baselines'] = ['gmail', 'drive', 'calendar', 'meet']
             st.experimental_rerun()
     
     with col3:
         if st.button("📧 Email Only", use_container_width=True):
-            st.session_state.config['products'] = ['gmail']
+            st.session_state.config['baselines'] = ['gmail']
             st.experimental_rerun()
     
     with col4:
         if st.button("❌ Clear All", use_container_width=True):
-            st.session_state.config['products'] = []
+            st.session_state.config['baselines'] = []
             st.experimental_rerun()
     
     # Product checkboxes
@@ -519,7 +517,7 @@ with tab1:
         for product_key, product_desc in products_list[:mid_point]:
             is_selected = st.checkbox(
                 product_desc,
-                value=product_key in st.session_state.config['products'],
+                value=product_key in st.session_state.config['baselines'],
                 key=f"product_{product_key}"
             )
             if is_selected:
@@ -529,13 +527,13 @@ with tab1:
         for product_key, product_desc in products_list[mid_point:]:
             is_selected = st.checkbox(
                 product_desc,
-                value=product_key in st.session_state.config['products'],
+                value=product_key in st.session_state.config['baselines'],
                 key=f"product_{product_key}"
             )
             if is_selected:
                 selected_products.append(product_key)
     
-    st.session_state.config['products'] = selected_products
+    st.session_state.config['baselines'] = selected_products
     
     if selected_products:
         st.success(f"✅ Selected {len(selected_products)} products: {', '.join([p.title() for p in selected_products])}")
@@ -560,13 +558,13 @@ with tab2:
     
     # Get available policies for selected products
     selected_product_policies = {}
-    for product in st.session_state.config.get('products', []):
+    for product in st.session_state.config.get('baselines', []):
         product_upper = product.upper()
         if product_upper in st.session_state.available_policies:
             selected_product_policies[product_upper] = st.session_state.available_policies[product_upper]
     
     # Add common controls if any product is selected
-    if st.session_state.config.get('products', []):
+    if st.session_state.config.get('baselines', []):
         selected_product_policies['COMMONCONTROLS'] = st.session_state.available_policies['COMMONCONTROLS']
     
     if not selected_product_policies:
@@ -594,26 +592,31 @@ with tab2:
                             """, unsafe_allow_html=True)
                         
                         with col2:
-                            is_omitted = policy_id in st.session_state.config.get('omitpolicy', [])
+                            is_omitted = policy_id in st.session_state.config.get('omitpolicy', {})
                             
                             if st.button("Omit" if not is_omitted else "Include", 
                                        key=f"omit_{policy_id}",
                                        type="secondary" if not is_omitted else "primary",
                                        use_container_width=True):
                                 if is_omitted:
-                                    st.session_state.config['omitpolicy'].remove(policy_id)
+                                    del st.session_state.config['omitpolicy'][policy_id]
                                 else:
                                     if 'omitpolicy' not in st.session_state.config:
-                                        st.session_state.config['omitpolicy'] = []
-                                    st.session_state.config['omitpolicy'].append(policy_id)
+                                        st.session_state.config['omitpolicy'] = {}
+                                    st.session_state.config['omitpolicy'][policy_id] = {
+                                        'rationale': 'Manual configuration - please update rationale',
+                                        'expiration': '2025-12-31'
+                                    }
                                 st.experimental_rerun()
     
     # Show omitted policies summary
-    omitted_policies = st.session_state.config.get('omitpolicy', [])
+    omitted_policies = st.session_state.config.get('omitpolicy', {})
     if omitted_policies:
-        st.subheader(f"📋 Currently Omitted Policies ({len(omitted_policies)}):")
-        for policy in omitted_policies:
-            st.write(f"• {policy}")
+        st.subheader(f"📋 Currently Omitted Policies ({len(omitted_policies)}):"):
+        for policy_id, policy_config in omitted_policies.items():
+            rationale = policy_config.get('rationale', 'No rationale provided')
+            expiration = policy_config.get('expiration', 'No expiration')
+            st.write(f"• {policy_id} - {rationale} (Expires: {expiration})")
     else:
         st.info("ℹ️ No policies are currently omitted")
 
@@ -635,14 +638,14 @@ with tab3:
     
     # Get available policies for annotation
     available_for_annotation = {}
-    for product in st.session_state.config.get('products', []):
+    for product in st.session_state.config.get('baselines', []):
         product_upper = product.upper()
         if product_upper in st.session_state.available_policies:
             for policy_id, policy_desc in st.session_state.available_policies[product_upper].items():
                 available_for_annotation[policy_id] = f"[{product_upper}] {policy_desc}"
     
     # Add common controls
-    if st.session_state.config.get('products', []):
+    if st.session_state.config.get('baselines', []):
         for policy_id, policy_desc in st.session_state.available_policies['COMMONCONTROLS'].items():
             available_for_annotation[policy_id] = f"[COMMONCONTROLS] {policy_desc}"
     
@@ -671,9 +674,11 @@ with tab3:
                 )
                 
                 if st.button("💾 Add Annotation", type="primary") and annotation_text.strip():
-                    if 'annotatepolicy' not in st.session_state.config:
-                        st.session_state.config['annotatepolicy'] = {}
-                    st.session_state.config['annotatepolicy'][selected_policy] = annotation_text.strip()
+                    if 'AnnotatePolicy' not in st.session_state.config:
+                        st.session_state.config['AnnotatePolicy'] = {}
+                    st.session_state.config['AnnotatePolicy'][selected_policy] = {
+                        'comment': annotation_text.strip()
+                    }
                     st.success(f"✅ Annotation added for {selected_policy}")
                     st.experimental_rerun()
         
@@ -715,14 +720,14 @@ with tab4:
     
     break_glass_text = st.text_area(
         "Break Glass Users",
-        value="\\n".join(st.session_state.config.get('breakglassaccounts', [])),
-        placeholder="Enter email addresses of break glass users, one per line:\\nadmin@example.com\\nemergency@example.com",
+        value="\n".join(st.session_state.config.get('breakglassaccounts', [])),
+        placeholder="Enter email addresses of break glass users, one per line:\nadmin@example.com\nemergency@example.com",
         help="Enter email addresses of users with emergency access privileges",
         height=150
     )
     
     if break_glass_text:
-        st.session_state.config['breakglassaccounts'] = [line.strip() for line in break_glass_text.split('\\n') if line.strip()]
+        st.session_state.config['breakglassaccounts'] = [line.strip() for line in break_glass_text.split('\n') if line.strip()]
     else:
         st.session_state.config['breakglassaccounts'] = []
     
@@ -749,34 +754,34 @@ with tab5:
         )
         
         if uploaded_file is not None:
-            st.session_state.config['credentials_file'] = uploaded_file.name
+            st.session_state.config['credentials'] = uploaded_file.name
             st.success(f"✅ Credentials: {uploaded_file.name}")
         
         # Manual path input
         creds_path = st.text_input(
             "Or specify credentials path:",
-            value=st.session_state.config['credentials_file'],
+            value=st.session_state.config['credentials'],
             placeholder="/path/to/service-account.json"
         )
         if creds_path:
-            st.session_state.config['credentials_file'] = creds_path
+            st.session_state.config['credentials'] = creds_path
     
     with col2:
         st.subheader("📁 Output Settings")
         
         output_dir = st.text_input(
-            "Output Directory",
-            value=st.session_state.config['output_dir'],
+            "Output Folder Name",
+            value=st.session_state.config['outputfoldername'],
             placeholder="./ScubaResults"
         )
-        st.session_state.config['output_dir'] = output_dir
+        st.session_state.config['outputfoldername'] = output_dir
         
-        report_title = st.text_input(
-            "Report Title",
-            value=st.session_state.config['report_title'],
-            placeholder="ScubaGoggles Security Assessment"
+        report_filename = st.text_input(
+            "Report Filename",
+            value=st.session_state.config['outputreportfilename'],
+            placeholder="BaselineReports"
         )
-        st.session_state.config['report_title'] = report_title
+        st.session_state.config['outputreportfilename'] = report_filename
     
     # Performance Settings
     st.subheader("⚡ Performance Settings")
@@ -800,29 +805,31 @@ with tab6:
     with col1:
         st.subheader("📊 Configuration Summary")
         st.metric("Organization", config_summary['orgname'] or "Not set")
-        st.metric("Products Selected", f"{len(config_summary['products'])}/8")
-        st.metric("Omitted Policies", len(config_summary.get('omitpolicy', [])))
-        st.metric("Annotated Policies", len(config_summary.get('annotatepolicy', {})))
+        st.metric("Baselines Selected", f"{len(config_summary['baselines'])}/8")
+        st.metric("Omitted Policies", len(config_summary.get('omitpolicy', {})))
+        st.metric("Annotated Policies", len(config_summary.get('AnnotatePolicy', {})))
         
     with col2:
-        st.subheader("📋 Selected Products")
-        if config_summary['products']:
-            for product in config_summary['products']:
-                st.write(f"✅ {product.title()}")
+        st.subheader("📋 Selected Baselines")
+        if config_summary['baselines']:
+            for baseline in config_summary['baselines']:
+                st.write(f"✅ {baseline.title()}")
         else:
-            st.write("❌ No products selected")
+            st.write("❌ No baselines selected")
     
     # Show omitted policies if any
     if config_summary.get('omitpolicy'):
         st.subheader("🚫 Omitted Policies")
-        for policy in config_summary['omitpolicy']:
-            st.write(f"• {policy}")
+        for policy_id, policy_config in config_summary['omitpolicy'].items():
+            rationale = policy_config.get('rationale', 'No rationale provided')
+            st.write(f"• {policy_id}: {rationale}")
     
     # Show annotations if any
-    if config_summary.get('annotatepolicy'):
+    if config_summary.get('AnnotatePolicy'):
         st.subheader("📝 Policy Annotations")
-        for policy_id, annotation in config_summary['annotatepolicy'].items():
-            st.write(f"**{policy_id}:** {annotation}")
+        for policy_id, annotation_config in config_summary['AnnotatePolicy'].items():
+            comment = annotation_config.get('comment', 'No comment')
+            st.write(f"**{policy_id}:** {comment}")
     
     # Full configuration display
     st.subheader("🔧 Full Configuration")
