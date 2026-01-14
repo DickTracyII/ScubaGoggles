@@ -134,7 +134,7 @@
                 requirements: requirements,
                 entrypoint: "streamlit_app.py",
                 files: {
-                    "streamlit_app.py": `# ScubaGoggles Configuration Interface - stlite Version
+                    "streamlit_app.py": \`# ScubaGoggles Configuration Interface - Enhanced stlite Version
 
 import streamlit as st
 import yaml
@@ -142,8 +142,6 @@ from typing import Dict, Any, List
 import os
 from datetime import date
 import json
-import tempfile
-from pathlib import Path
 
 # Configure page
 st.set_page_config(
@@ -152,6 +150,102 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# Parse baseline policies from embedded data
+def parse_baseline_policies():
+    """Parse policies from baseline data"""
+    
+    # Since we can't read files in stlite, we'll embed key policy data
+    baseline_policies = {
+        'COMMONCONTROLS': {
+            'GWS.COMMONCONTROLS.1.1v0.6': 'Phishing-Resistant MFA SHALL be required for all users.',
+            'GWS.COMMONCONTROLS.1.2v0.6': 'Post SSO verification SHOULD be enabled for users signing in using the SSO profile for your organization.',
+            'GWS.COMMONCONTROLS.1.3v0.6': 'Post SSO verification SHOULD be enabled for users signing in using other SSO profiles.',
+            'GWS.COMMONCONTROLS.1.4v0.6': 'Users SHALL be forced to re-authenticate after an established 12-hour GWS login session has expired.',
+            'GWS.COMMONCONTROLS.1.5v0.6': 'User password strength SHALL be enforced.',
+            'GWS.COMMONCONTROLS.2.1v0.6': 'User password length SHALL be at least 12 characters.',
+            'GWS.COMMONCONTROLS.3.1v0.6': 'Users SHALL be forced to re-authenticate after an established 12-hour GWS login session has expired.',
+            'GWS.COMMONCONTROLS.3.2v0.6': 'User password strength SHALL be enforced.',
+            'GWS.COMMONCONTROLS.4.1v0.6': 'Password policy SHALL be enforced at next sign in.',
+            'GWS.COMMONCONTROLS.5.1v0.6': 'User password strength SHALL be enforced.',
+            'GWS.COMMONCONTROLS.5.2v0.6': 'User password length SHALL be at least 12 characters.',
+            'GWS.COMMONCONTROLS.5.3v0.6': 'User password length SHALL be at least 15 characters.',
+            'GWS.COMMONCONTROLS.5.4v0.6': 'Password policy SHALL be enforced at next sign in.',
+            'GWS.COMMONCONTROLS.5.5v0.6': 'User passwords SHALL NOT be reused.',
+            'GWS.COMMONCONTROLS.5.6v0.6': 'Agencies SHALL NOT allow users to access unconfigured third party apps.',
+            'GWS.COMMONCONTROLS.10.5v0.6': 'Access to Google Workspace applications by less secure apps that do not meet security standards for authentication SHALL be prevented.',
+            'GWS.COMMONCONTROLS.18.4v0.6': 'The action for the above DLP policies SHALL be set to block external sharing.'
+        },
+        'GMAIL': {
+            'GWS.GMAIL.1.1v0.6': 'External recipient warnings SHALL be enabled.',
+            'GWS.GMAIL.2.1v0.6': 'SPF records SHALL be published for all domains.',
+            'GWS.GMAIL.3.1v0.6': 'DKIM signing SHALL be enabled.',
+            'GWS.GMAIL.4.1v0.6': 'DMARC policy SHALL be published for all domains.',
+            'GWS.GMAIL.5.1v0.6': 'Inbound email SHALL be scanned for malware.',
+            'GWS.GMAIL.6.1v0.6': 'Email SHALL be scanned for phishing.',
+            'GWS.GMAIL.7.1v0.6': 'Enhanced phishing and malware protection SHALL be enabled.',
+            'GWS.GMAIL.8.1v0.6': 'Automatic forwarding to external domains SHALL be disabled.',
+            'GWS.GMAIL.9.1v0.6': 'POP and IMAP access SHALL be disabled.',
+            'GWS.GMAIL.10.1v0.6': 'Comprehensive mail storage SHALL be enabled.',
+            'GWS.GMAIL.11.1v0.6': 'Email delegation SHALL be disabled.',
+            'GWS.GMAIL.12.1v0.6': 'Per-message filters SHALL be disabled.',
+            'GWS.GMAIL.13.1v0.6': 'Spoofing protection SHALL be enabled.'
+        },
+        'DRIVE': {
+            'GWS.DRIVE.1.1v0.6': 'External sharing SHALL be restricted.',
+            'GWS.DRIVE.2.1v0.6': 'Link sharing SHALL be disabled for users.',
+            'GWS.DRIVE.3.1v0.6': 'Users SHALL NOT be allowed to publish on the web.',
+            'GWS.DRIVE.4.1v0.6': 'Received files SHALL be scanned.',
+            'GWS.DRIVE.5.1v0.6': 'Users SHALL be warned when sharing outside the domain.',
+            'GWS.DRIVE.6.1v0.6': 'Distributing published content via Docs SHALL be disabled.',
+            'GWS.DRIVE.7.1v0.6': 'Drive file stream SHALL be disabled for users.',
+            'GWS.DRIVE.8.1v0.6': 'Mobile editing SHALL be disabled.',
+            'GWS.DRIVE.9.1v0.6': 'Offline access SHALL be disabled.',
+            'GWS.DRIVE.10.1v0.6': 'Third party Drive apps SHALL be disabled.',
+            'GWS.DRIVE.11.1v0.6': 'Users SHALL NOT be able to install Drive add-ons.',
+            'GWS.DRIVE.12.1v0.6': 'Users in this organization SHALL NOT be allowed to share items outside of the domain.'
+        },
+        'CALENDAR': {
+            'GWS.CALENDAR.1.1v0.6': 'External sharing SHALL be disabled.',
+            'GWS.CALENDAR.2.1v0.6': 'Calendar interop management SHALL be disabled.',
+            'GWS.CALENDAR.3.1v0.6': 'External calendar sharing SHALL be restricted.',
+            'GWS.CALENDAR.4.1v0.6': 'Warning for external participants SHALL be enabled.',
+            'GWS.CALENDAR.5.1v0.6': 'External calendar invitations SHALL be restricted.'
+        },
+        'MEET': {
+            'GWS.MEET.1.1v0.6': 'External participants SHALL be restricted.',
+            'GWS.MEET.2.1v0.6': 'Anonymous users SHALL NOT be allowed to join meetings.',
+            'GWS.MEET.3.1v0.6': 'External recording SHALL be disabled.',
+            'GWS.MEET.4.1v0.6': 'Meeting recordings SHALL be disabled for users.',
+            'GWS.MEET.5.1v0.6': 'Live streaming SHALL be disabled.',
+            'GWS.MEET.6.1v0.6': 'Phone access to meetings SHALL be disabled.'
+        },
+        'GROUPS': {
+            'GWS.GROUPS.1.1v0.6': 'External sharing SHALL be disabled.',
+            'GWS.GROUPS.2.1v0.6': 'External users SHALL NOT be allowed to join groups.',
+            'GWS.GROUPS.3.1v0.6': 'Group creation SHALL be restricted.',
+            'GWS.GROUPS.4.1v0.6': 'External members SHALL be restricted.'
+        },
+        'CHAT': {
+            'GWS.CHAT.1.1v0.6': 'External chat SHALL be disabled.',
+            'GWS.CHAT.2.1v0.6': 'External users SHALL NOT be allowed in chat.',
+            'GWS.CHAT.3.1v0.6': 'File sharing SHALL be restricted in chat.',
+            'GWS.CHAT.4.1v0.6': 'Chat history SHALL be enabled.'
+        },
+        'SITES': {
+            'GWS.SITES.1.1v0.6': 'External sharing SHALL be disabled.',
+            'GWS.SITES.2.1v0.6': 'Site creation SHALL be restricted.',
+            'GWS.SITES.3.1v0.6': 'Public site creation SHALL be disabled.'
+        },
+        'CLASSROOM': {
+            'GWS.CLASSROOM.1.1v0.6': 'External sharing SHALL be disabled.',
+            'GWS.CLASSROOM.2.1v0.6': 'Guardian email summaries SHALL be disabled.',
+            'GWS.CLASSROOM.3.1v0.6': 'Student unenrollment SHALL be restricted.',
+            'GWS.CLASSROOM.4.1v0.6': 'Class creation SHALL be restricted to teachers only.'
+        }
+    }
+    
+    return baseline_policies
 
 # Custom CSS for professional styling to match existing design
 st.markdown("""
@@ -208,12 +302,24 @@ st.markdown("""
         border-left: 4px solid #4472C4;
     }
     
-    .help-expander {
-        background: #e3f2fd;
-        border: 1px solid #bbdefb;
-        border-radius: 8px;
+    .policy-item {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
         padding: 1rem;
-        margin: 1rem 0;
+        margin: 0.5rem 0;
+    }
+    
+    .policy-id {
+        font-weight: bold;
+        color: #4472C4;
+        font-size: 0.9rem;
+    }
+    
+    .policy-desc {
+        color: #666;
+        margin: 0.5rem 0;
+        font-size: 0.85rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -243,6 +349,10 @@ if 'config' not in st.session_state:
         'break_glass_users': [],
         'advanced_settings': {}
     }
+
+# Parse available policies
+if 'available_policies' not in st.session_state:
+    st.session_state.available_policies = parse_baseline_policies()
 
 # Create tabs matching the existing design
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
@@ -359,8 +469,7 @@ with tab1:
             is_selected = st.checkbox(
                 product_desc,
                 value=product_key in st.session_state.config['products'],
-                key3+
-                f"product_{product_key}"
+                key=f"product_{product_key}"
             )
             if is_selected:
                 selected_products.append(product_key)
@@ -386,75 +495,163 @@ with tab2:
     st.header("🚫 Omit Policies")
     st.info("Configure which security policies to omit from the assessment")
     
-    st.markdown("""
-    ### Policy Omission
-    Use this section to specify which security policies should be excluded from your assessment.
-    This is useful when certain policies are not applicable to your organization or environment.
-    """)
+    with st.expander("ℹ️ Help: Policy Omission Guidelines"):
+        st.markdown("""
+        Use this section to exclude specific policies from ScubaGoggles evaluation.
+        
+        **Important**: Any omitted policies should be carefully considered and documented as part of your organization's cybersecurity risk management program.
+        
+        **Common reasons for omitting policies:**
+        - Policy is implemented by a third-party service that ScubaGoggles cannot audit
+        - Policy is not applicable to your organization 
+        - Accepting risk for specific controls with proper documentation
+        """)
     
-    # Omit policies interface
-    omit_text = st.text_area(
-        "Policies to Omit",
-        value="\n".join(st.session_state.config.get('omit_policies', [])),
-        placeholder="Enter policy names to omit, one per line:\nGWS.GMAIL.1.1\nGWS.DRIVE.2.3",
-        help="Enter the specific policy identifiers you want to exclude",
-        height=200
-    )
+    # Get available policies for selected products
+    selected_product_policies = {}
+    for product in st.session_state.config.get('products', []):
+        product_upper = product.upper()
+        if product_upper in st.session_state.available_policies:
+            selected_product_policies[product_upper] = st.session_state.available_policies[product_upper]
     
-    if omit_text:
-        st.session_state.config['omit_policies'] = [line.strip() for line in omit_text.split('\n') if line.strip()]
+    # Add common controls if any product is selected
+    if st.session_state.config.get('products', []):
+        selected_product_policies['COMMONCONTROLS'] = st.session_state.available_policies['COMMONCONTROLS']
+    
+    if not selected_product_policies:
+        st.warning("⚠️ Please select products in the Main tab to see available policies.")
     else:
-        st.session_state.config['omit_policies'] = []
+        st.subheader("Available Policies from Selected Products:")
+        
+        # Create tabs for each product
+        if len(selected_product_policies) > 1:
+            product_tabs = st.tabs(list(selected_product_policies.keys()))
+            
+            for i, (product_name, policies) in enumerate(selected_product_policies.items()):
+                with product_tabs[i]:
+                    st.write(f"**{product_name}** policies:")
+                    
+                    for policy_id, policy_desc in policies.items():
+                        col1, col2 = st.columns([5, 1])
+                        
+                        with col1:
+                            st.markdown(f"""
+                            <div class="policy-item">
+                                <div class="policy-id">{policy_id}</div>
+                                <div class="policy-desc">{policy_desc}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        with col2:
+                            is_omitted = policy_id in st.session_state.config.get('omit_policies', [])
+                            
+                            if st.button("Omit" if not is_omitted else "Include", 
+                                       key=f"omit_{policy_id}",
+                                       type="secondary" if not is_omitted else "primary",
+                                       use_container_width=True):
+                                if is_omitted:
+                                    st.session_state.config['omit_policies'].remove(policy_id)
+                                else:
+                                    if 'omit_policies' not in st.session_state.config:
+                                        st.session_state.config['omit_policies'] = []
+                                    st.session_state.config['omit_policies'].append(policy_id)
+                                st.rerun()
     
-    if st.session_state.config['omit_policies']:
-        st.subheader("📋 Policies to be Omitted:")
-        for policy in st.session_state.config['omit_policies']:
+    # Show omitted policies summary
+    omitted_policies = st.session_state.config.get('omit_policies', [])
+    if omitted_policies:
+        st.subheader(f"📋 Currently Omitted Policies ({len(omitted_policies)}):")
+        for policy in omitted_policies:
             st.write(f"• {policy}")
+    else:
+        st.info("ℹ️ No policies are currently omitted")
 
 with tab3:
     st.header("📝 Annotate Policies")
     st.info("Add custom annotations and notes to specific policies")
     
-    st.markdown("""
-    ### Policy Annotations
-    Add custom notes, explanations, or exceptions for specific policies in your assessment report.
-    """)
+    with st.expander("ℹ️ Help: Policy Annotations"):
+        st.markdown("""
+        ### Policy Annotations
+        Add custom notes, explanations, or exceptions for specific policies in your assessment report.
+        
+        **Use annotations to:**
+        - Explain organizational context for policy implementations
+        - Document approved exceptions or alternative controls
+        - Provide additional guidance for policy reviewers
+        - Reference related documentation or procedures
+        """)
     
-    # Add annotation interface
-    if st.button("➕ Add New Annotation"):
-        if 'annotation_counter' not in st.session_state:
-            st.session_state.annotation_counter = 0
-        st.session_state.annotation_counter += 1
+    # Get available policies for annotation
+    available_for_annotation = {}
+    for product in st.session_state.config.get('products', []):
+        product_upper = product.upper()
+        if product_upper in st.session_state.available_policies:
+            for policy_id, policy_desc in st.session_state.available_policies[product_upper].items():
+                available_for_annotation[policy_id] = f"[{product_upper}] {policy_desc}"
     
-    # Display existing annotations
-    annotations = st.session_state.config.get('annotate_policies', {})
+    # Add common controls
+    if st.session_state.config.get('products', []):
+        for policy_id, policy_desc in st.session_state.available_policies['COMMONCONTROLS'].items():
+            available_for_annotation[policy_id] = f"[COMMONCONTROLS] {policy_desc}"
     
-    if 'annotation_counter' in st.session_state:
-        for i in range(st.session_state.annotation_counter):
-            col1, col2, col3 = st.columns([3, 4, 1])
-            
-            with col1:
-                policy_key = st.text_input(
-                    "Policy ID",
-                    key=f"policy_id_{i}",
-                    placeholder="e.g., GWS.GMAIL.1.1"
-                )
-            
-            with col2:
-                annotation_text = st.text_input(
+    if not available_for_annotation:
+        st.warning("⚠️ Please select products in the Main tab to annotate policies.")
+    else:
+        # Add new annotation
+        st.subheader("➕ Add Policy Annotation")
+        
+        col1, col2 = st.columns([2, 3])
+        
+        with col1:
+            selected_policy = st.selectbox(
+                "Select Policy to Annotate",
+                [""] + list(available_for_annotation.keys()),
+                format_func=lambda x: f"{x} - {available_for_annotation.get(x, '')[:50]}..." if x else "Select a policy"
+            )
+        
+        with col2:
+            if selected_policy:
+                annotation_text = st.text_area(
                     "Annotation",
-                    key=f"annotation_{i}",
-                    placeholder="Custom note or explanation"
+                    placeholder="Enter your annotation or note for this policy...",
+                    height=100,
+                    key="new_annotation_text"
                 )
+                
+                if st.button("💾 Add Annotation", type="primary") and annotation_text.strip():
+                    if 'annotate_policies' not in st.session_state.config:
+                        st.session_state.config['annotate_policies'] = {}
+                    st.session_state.config['annotate_policies'][selected_policy] = annotation_text.strip()
+                    st.success(f"✅ Annotation added for {selected_policy}")
+                    st.rerun()
+        
+        # Show existing annotations
+        existing_annotations = st.session_state.config.get('annotate_policies', {})
+        if existing_annotations:
+            st.subheader(f"📝 Current Annotations ({len(existing_annotations)}):")
             
-            with col3:
-                if st.button("🗑️", key=f"delete_{i}", help="Delete this annotation"):
-                    pass  # Handle deletion
-            
-            if policy_key and annotation_text:
-                annotations[policy_key] = annotation_text
-    
-    st.session_state.config['annotate_policies'] = annotations
+            for policy_id, annotation in existing_annotations.items():
+                col1, col2 = st.columns([4, 1])
+                
+                with col1:
+                    policy_desc = available_for_annotation.get(policy_id, "Unknown policy")
+                    st.markdown(f"""
+                    <div class="policy-item">
+                        <div class="policy-id">{policy_id}</div>
+                        <div class="policy-desc">{policy_desc}</div>
+                        <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px; font-size: 0.85rem;">
+                            <strong>Annotation:</strong> {annotation}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col2:
+                    if st.button("🗑️", key=f"delete_annotation_{policy_id}", help="Delete this annotation"):
+                        del st.session_state.config['annotate_policies'][policy_id]
+                        st.rerun()
+        else:
+            st.info("ℹ️ No policy annotations added yet")
 
 with tab4:
     st.header("🔓 Break Glass Users")
@@ -467,14 +664,14 @@ with tab4:
     
     break_glass_text = st.text_area(
         "Break Glass Users",
-        value="\n".join(st.session_state.config.get('break_glass_users', [])),
-        placeholder="Enter email addresses of break glass users, one per line:\nadmin@example.com\nemergency@example.com",
+        value="\\n".join(st.session_state.config.get('break_glass_users', [])),
+        placeholder="Enter email addresses of break glass users, one per line:\\nadmin@example.com\\nemergency@example.com",
         help="Enter email addresses of users with emergency access privileges",
         height=150
     )
     
     if break_glass_text:
-        st.session_state.config['break_glass_users'] = [line.strip() for line in break_glass_text.split('\n') if line.strip()]
+        st.session_state.config['break_glass_users'] = [line.strip() for line in break_glass_text.split('\\n') if line.strip()]
     else:
         st.session_state.config['break_glass_users'] = []
     
@@ -564,6 +761,18 @@ with tab6:
         else:
             st.write("❌ No products selected")
     
+    # Show omitted policies if any
+    if config_summary.get('omit_policies'):
+        st.subheader("🚫 Omitted Policies")
+        for policy in config_summary['omit_policies']:
+            st.write(f"• {policy}")
+    
+    # Show annotations if any
+    if config_summary.get('annotate_policies'):
+        st.subheader("📝 Policy Annotations")
+        for policy_id, annotation in config_summary['annotate_policies'].items():
+            st.write(f"**{policy_id}:** {annotation}")
+    
     # Full configuration display
     st.subheader("🔧 Full Configuration")
     config_yaml = yaml.dump(config_summary, default_flow_style=False, sort_keys=False)
@@ -624,9 +833,9 @@ with tab7:
             3. **Run with the command below**:
             """)
             
-            command = f"""python -m scubagoggles \\
-    --credentials "{creds_file}" \\
-    --outputdir "{output_dir}" \\
+            command = f"""python -m scubagoggles \\\\
+    --credentials "{creds_file}" \\\\
+    --outputdir "{output_dir}" \\\\
     --productnames {products_str}"""
             
             st.code(command, language='bash')
@@ -643,7 +852,7 @@ st.markdown("""
     🤿 <strong>ScubaGoggles Configuration Editor</strong> | 
     Professional Google Workspace Security Assessment Tool
 </div>
-""", unsafe_allow_html=True)`
+""", unsafe_allow_html=True)\`
                 }
             },
             document.getElementById("stlite-main"),
