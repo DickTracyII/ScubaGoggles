@@ -307,13 +307,18 @@ def get_opa_args(parser: argparse.ArgumentParser, user_config: UserConfig):
                                help = 'Version of OPA to download (default: '
                                    f'{OPA_VERSION})')
 
-def get_ui_config_args(parser: argparse.ArgumentParser, user_config: UserConfig):
+def get_ui_config_args(parser: argparse.ArgumentParser):
     """Adds the arguments for the "get OPA" parser.
 
     :param argparse.ArgumentParser parser: argparse object
     """
 
     parser.set_defaults(dispatch=launch_ui)
+
+    parser.add_argument(
+        "--port", "-p", type=int, default=8501, help="Port to run UI server from"
+    )
+
 
 def get_setup_args(parser: argparse.ArgumentParser, user_config: UserConfig):
     """Adds the arguments for the setup parser
@@ -499,7 +504,7 @@ def dive():
     config_parser = subparsers.add_parser('config',
                                           description=help_msg,
                                           help=help_msg)
-    get_ui_config_args(config_parser, user_config)
+    get_ui_config_args(config_parser)
 
     help_msg = 'Purge old ScubaGoggles reports'
     purge_parser = subparsers.add_parser('purge',

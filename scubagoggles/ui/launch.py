@@ -5,6 +5,7 @@ Simple script to start the Streamlit configuration interface
 """
 
 import subprocess
+import shlex
 import sys
 from pathlib import Path
 import argparse
@@ -12,46 +13,36 @@ import argparse
 
 def launch_ui(arguments: argparse.Namespace):
     """Launch the ScubaGoggles UI"""
-    
+
     # Determine which app to run
     ui_dir = Path(__file__).parent
-    
+
     # Try the enhanced app first, fall back to basic app
-    app_files = [
-        ui_dir / "scubaconfigapp.py",
-        ui_dir / "config_generator.py"
-    ]
-    
+    app_files = [ui_dir / "scubaconfigapp.py", ui_dir / "config_generator.py"]
+
     app_to_run = None
     for app_file in app_files:
         if app_file.exists():
             app_to_run = app_file
             break
-    
+
     if not app_to_run:
         print("❌ No UI application found!")
         print("Please ensure the UI modules are properly installed.")
         sys.exit(1)
-    
+
     # Check if streamlit is available
     try:
         import streamlit
-        print(f"🤿 Starting ScubaGoggles Configuration UI...")
+
+        print("🤿 Starting ScubaGoggles Configuration UI...")
         print(f"📱 Using: {app_to_run.name}")
-        print(f"🌐 Opening in your default browser...")
-        
+        print("🌐 Opening in your default browser...")
+
         # Launch Streamlit
-        cmd = [
-            sys.executable, "-m", "streamlit", "run", 
-            str(app_to_run),
-            "--server.address", "localhost",
-            "--server.port", "8501",
-            "--browser.gatherUsageStats", "false",
-            "--server.showEmailPrompt", "false"
-        ]
-        
-        subprocess.run(cmd)
-        
+        cmd = f"""{sys.executable} -m streamlit run {str(app_to_run)} --server.port {arguments.port}"""
+        subprocess.run(shlex.split(cmd))
+
     except ImportError:
         print("❌ Streamlit is not installed!")
         print("📦 Please reinstall ScubaGoggles with the optional UI dependencies:")
@@ -65,7 +56,3 @@ def launch_ui(arguments: argparse.Namespace):
         print(f"❌ Error starting UI: {e}")
         sys.exit(1)
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    launch_ui(parser.parse_args())

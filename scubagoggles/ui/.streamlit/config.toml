@@ -1,0 +1,10 @@
+[server]
+address = "localhost"
+showEmailPrompt = false
+fileWatcherType = "poll"
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "viewer"
