@@ -27,7 +27,7 @@ SCUBAGOGGLES_AVAILABLE = True
 try:
     from scubagoggles.orchestrator import Orchestrator
     from scubagoggles.config import UserConfig
-    from scubagoggles.version import Version
+    from scubagoggles import __version__
     from scubagoggles.scuba_constants import OPA_VERSION
 except ImportError as e:
     SCUBAGOGGLES_AVAILABLE = False
@@ -42,13 +42,9 @@ except ImportError as e:
             self.output_dir = "./"
             self.credentials_file = None
     
-    class MockVersion:
-        def __init__(self):
-            self.version = "1.0.0"
-    
     Orchestrator = MockOrchestrator
     UserConfig = MockUserConfig
-    Version = MockVersion
+    __version__ = "NA"
     OPA_VERSION = "0.70.0"
 
 
@@ -57,7 +53,7 @@ class ScubaConfigApp:
     
     def __init__(self):
         self.user_config = UserConfig()
-        self.version = Version()
+        self.version = __version__
         self.available_policies = self.parse_baseline_policies()
         
         # Initialize session state
@@ -2029,7 +2025,7 @@ class ScubaConfigApp:
                 st.markdown('<span class="status-indicator status-warning">⚠️ ScubaGoggles Limited</span>', unsafe_allow_html=True)
         
         with col2:
-            st.markdown(f"**Version:** {self.version.version}")
+            st.markdown(f"**Version:** {self.version}")
         
         with col3:
             st.markdown("**[GitHub Repository](https://github.com/cisagov/ScubaGoggles)**")
