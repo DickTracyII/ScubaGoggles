@@ -612,7 +612,7 @@ with tab2:
     # Show omitted policies summary
     omitted_policies = st.session_state.config.get('omitpolicy', {})
     if omitted_policies:
-        st.subheader(f"📋 Currently Omitted Policies ({len(omitted_policies)}):"):
+        st.subheader(f"📋 Currently Omitted Policies ({len(omitted_policies)}):")
         for policy_id, policy_config in omitted_policies.items():
             rationale = policy_config.get('rationale', 'No rationale provided')
             expiration = policy_config.get('expiration', 'No expiration')
