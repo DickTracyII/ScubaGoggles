@@ -150,19 +150,6 @@ class ScubaConfigApp:
             initial_sidebar_state="collapsed"
         )
         
-        # Set custom theme with green primary color for checkboxes
-        st.markdown("""
-        <script>
-        const theme = {
-            primaryColor: "#28a745",
-            backgroundColor: "#f6fbfe", 
-            secondaryBackgroundColor: "#ffffff",
-            textColor: "#262730"
-        };
-        window.streamlitTheme = theme;
-        </script>
-        """, unsafe_allow_html=True)
-        
         # Custom CSS to match ScubaGear's professional look with dark mode support
         dark_mode = st.session_state.config_data.get('ui_dark_mode', False)
         

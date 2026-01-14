@@ -8,3 +8,9 @@ gatherUsageStats = false
 
 [client]
 toolbarMode = "viewer"
+
+[theme]
+primaryColor = "#28a745"
+backgroundColor = "#f6fbfe"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#262730"
