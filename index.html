@@ -1,6 +1,548 @@
-<head >
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScubaGoggles Configuration Interface</title>
+    <meta name="description" content="Professional ScubaGoggles Configuration Interface for Google Workspace Security Assessment">
+    
+    <!-- stlite CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.0/build/stlite.css" />
+    
+    <!-- Custom Styling to match ScubaGear branding -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .logo {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .tagline {
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        #stlite-main {
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        .error-container {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #ff6b6b;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .error-message {
+            max-width: 600px;
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body>
-<div>Welcome world</div>
+    <!-- Loading Screen -->
+    <div id="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <div class="logo">🤿 ScubaGoggles</div>
+        <div class="tagline">Google Workspace Security Assessment Tool</div>
+        <p>Loading Configuration Interface...</p>
+        <p style="font-size: 0.9em; opacity: 0.7;">Please wait while we prepare your security assessment dashboard</p>
+    </div>
+    
+    <!-- Error Screen -->
+    <div id="error" class="error-container">
+        <div class="logo">⚠️ Error</div>
+        <div class="error-message">
+            <h2>Failed to Load ScubaGoggles Interface</h2>
+            <p>There was an error loading the application. This could be due to:</p>
+            <ul style="text-align: left;">
+                <li>Network connectivity issues</li>
+                <li>Browser compatibility problems</li>
+                <li>Temporary service unavailability</li>
+            </ul>
+            <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: white; color: #ff6b6b; border: none; border-radius: 5px; cursor: pointer;">
+                Retry
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Application Container -->
+    <div id="stlite-main"></div>
+
+    <!-- stlite JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.0/build/stlite.js"></script>
+    
+    <script>
+        // Configuration for stlite
+        const requirements = [
+            "streamlit>=1.28.0",
+            "streamlit-option-menu>=0.3.6",
+            "pyyaml",
+            "pathlib2; python_version < '3.4'"
+        ];
+        
+        // Hide loading screen and show error on failure
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'flex';
+        }
+        
+        // Hide loading screen and show app on success
+        function showApp() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Mount the Streamlit app
+        stlite.mount(
+            {
+                requirements: requirements,
+                entrypoint: "streamlit_app.py",
+                files: {
+                    "streamlit_app.py": `# ScubaGoggles Configuration Interface - stlite Version
+
+import streamlit as st
+import yaml
+from typing import Dict, Any, List
+import os
+from datetime import date
+import json
+import tempfile
+from pathlib import Path
+
+# Configure page
+st.set_page_config(
+    page_title="ScubaGoggles Configuration",
+    page_icon="🤿",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://github.com/cisagov/ScubaGoggles',
+        'Report a bug': "https://github.com/cisagov/ScubaGoggles/issues",
+        'About': "# ScubaGoggles Configuration Interface\\n\\nProfessional configuration tool for Google Workspace security assessments."
+    }
+)
+
+# Header
+st.title("🤿 ScubaGoggles Configuration Interface")
+st.write("Professional Google Workspace Security Assessment Tool")
+
+# Initialize session state
+if 'config' not in st.session_state:
+    st.session_state.config = {
+        'credentials_file': '',
+        'output_dir': './ScubaResults',
+        'products': ['gmail', 'drive', 'calendar', 'meet'],
+        'report_title': 'ScubaGoggles Security Assessment',
+        'organization_name': '',
+        'organization_domain': '',
+        'assessment_date': str(date.today())
+    }
+
+# Sidebar for navigation
+with st.sidebar:
+    st.title("Configuration Menu")
+    page = st.selectbox(
+        "Select Configuration Section",
+        ["🏠 Overview", "🔐 Authentication", "📊 Products", "📁 Output Settings", "🎯 Assessment Details", "💾 Save/Load Config", "🚀 Run Assessment"]
+    )
+
+if page == "🏠 Overview":
+    st.header("Welcome to ScubaGoggles")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("📋 Quick Setup Checklist")
+        st.write("✅ Configure Google Workspace credentials")
+        st.write("✅ Select products to assess")
+        st.write("✅ Set output directory") 
+        st.write("✅ Configure assessment details")
+        st.write("✅ Run security assessment")
+    
+    with col2:
+        st.subheader("🔍 Assessment Products")
+        st.write("ScubaGoggles can assess security configurations for:")
+        st.write("• Gmail Security Settings")
+        st.write("• Google Drive Sharing Policies")
+        st.write("• Calendar Privacy Settings")
+        st.write("• Google Meet Security Controls")
+        st.write("• Groups Management")
+        st.write("• Chat & Spaces Policies")
+        st.write("• Sites Sharing Controls")
+        st.write("• Classroom Security Settings")
+    
+    st.subheader("📊 Current Configuration Status")
+    
+    status_col1, status_col2, status_col3 = st.columns(3)
+    
+    with status_col1:
+        creds_status = "✅ Configured" if st.session_state.config['credentials_file'] else "❌ Not Set"
+        st.metric("Credentials", creds_status)
+    
+    with status_col2:
+        products_count = len(st.session_state.config['products'])
+        st.metric("Products Selected", f"{products_count}/8")
+    
+    with status_col3:
+        output_status = "✅ Set" if st.session_state.config['output_dir'] else "❌ Not Set"
+        st.metric("Output Directory", output_status)
+
+elif page == "🔐 Authentication":
+    st.header("🔐 Google Workspace Authentication")
+    
+    st.write("ScubaGoggles requires a Google Workspace service account with appropriate permissions.")
+    
+    # Credentials file upload
+    uploaded_file = st.file_uploader(
+        "Upload Service Account JSON File",
+        type=['json'],
+        help="Upload your Google Workspace service account credentials file"
+    )
+    
+    if uploaded_file is not None:
+        st.session_state.config['credentials_file'] = uploaded_file.name
+        st.success(f"✅ Credentials file loaded: {uploaded_file.name}")
+        
+        try:
+            credentials_data = json.load(uploaded_file)
+            st.info(f"Service Account: {credentials_data.get('type', 'Unknown')}")
+            st.info(f"Project ID: {credentials_data.get('project_id', 'Unknown')}")
+            st.info(f"Client Email: {credentials_data.get('client_email', 'Unknown')}")
+        except:
+            st.error("❌ Invalid credentials file format")
+    
+    # Manual path input
+    st.subheader("Or specify credentials file path:")
+    creds_path = st.text_input(
+        "Credentials File Path",
+        value=st.session_state.config['credentials_file'],
+        placeholder="/path/to/your/service-account.json"
+    )
+    if creds_path:
+        st.session_state.config['credentials_file'] = creds_path
+
+elif page == "📊 Products":
+    st.header("📊 Google Workspace Products to Assess")
+    
+    available_products = {
+        'gmail': 'Gmail - Email security settings, external sharing, DLP policies',
+        'drive': 'Google Drive - File sharing policies, external access, link sharing settings',
+        'calendar': 'Google Calendar - Calendar sharing, external attendee policies, privacy settings',
+        'meet': 'Google Meet - Meeting security, external participant controls, recording policies',
+        'groups': 'Google Groups - Group management, external member policies, posting permissions',
+        'chat': 'Google Chat - Chat security, external chat policies, history settings',
+        'sites': 'Google Sites - Site sharing policies, external access, publishing settings',
+        'classroom': 'Google Classroom - Classroom security, external teacher policies, student privacy'
+    }
+    
+    st.write("Choose which Google Workspace products you want to include in your security assessment.")
+    
+    # Quick selection buttons
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("Select All"):
+            st.session_state.config['products'] = list(available_products.keys())
+            st.experimental_rerun()
+    
+    with col2:
+        if st.button("Select Core"):
+            st.session_state.config['products'] = ['gmail', 'drive', 'calendar', 'meet']
+            st.experimental_rerun()
+    
+    with col3:
+        if st.button("Clear All"):
+            st.session_state.config['products'] = []
+            st.experimental_rerun()
+    
+    # Product selection
+    selected_products = []
+    
+    for product_key, product_desc in available_products.items():
+        is_selected = st.checkbox(
+            product_desc,
+            value=product_key in st.session_state.config['products'],
+            key=f"product_{product_key}"
+        )
+        
+        if is_selected:
+            selected_products.append(product_key)
+    
+    st.session_state.config['products'] = selected_products
+    
+    if selected_products:
+        st.success(f"✅ Selected Products ({len(selected_products)}/8): {', '.join(selected_products)}")
+
+elif page == "📁 Output Settings":
+    st.header("📁 Output and Reporting Settings")
+    
+    st.write("Specify where ScubaGoggles should save assessment results and reports.")
+    
+    # Output directory
+    output_dir = st.text_input(
+        "Output Directory Path",
+        value=st.session_state.config['output_dir'],
+        placeholder="./ScubaResults",
+        help="Directory where assessment results will be saved"
+    )
+    st.session_state.config['output_dir'] = output_dir
+    
+    # Output format options
+    st.subheader("📊 Report Format Options")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        generate_html = st.checkbox("Generate HTML Report", value=True)
+        generate_json = st.checkbox("Generate JSON Output", value=True)
+    
+    with col2:
+        generate_csv = st.checkbox("Generate CSV Summary", value=False)
+        generate_pdf = st.checkbox("Generate PDF Report", value=False)
+
+elif page == "🎯 Assessment Details":
+    st.header("🎯 Assessment Configuration Details")
+    
+    st.write("Provide details about your organization for the assessment report.")
+    
+    # Organization details
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        org_name = st.text_input(
+            "Organization Name",
+            value=st.session_state.config['organization_name'],
+            placeholder="Your Organization Name"
+        )
+        st.session_state.config['organization_name'] = org_name
+    
+    with col2:
+        org_domain = st.text_input(
+            "Organization Domain",
+            value=st.session_state.config['organization_domain'],
+            placeholder="example.com"
+        )
+        st.session_state.config['organization_domain'] = org_domain
+    
+    # Assessment metadata
+    st.subheader("📋 Assessment Metadata")
+    
+    report_title = st.text_input(
+        "Report Title",
+        value=st.session_state.config['report_title'],
+        placeholder="ScubaGoggles Security Assessment"
+    )
+    st.session_state.config['report_title'] = report_title
+    
+    assessment_date = st.date_input(
+        "Assessment Date",
+        value=date.today()
+    )
+    st.session_state.config['assessment_date'] = str(assessment_date)
+
+elif page == "💾 Save/Load Config":
+    st.header("💾 Configuration Management")
+    
+    st.write("Save your current configuration for reuse or load a previously saved configuration.")
+    
+    # Current configuration preview
+    st.subheader("📋 Current Configuration")
+    config_preview = st.session_state.config.copy()
+    st.code(yaml.dump(config_preview, default_flow_style=False), language='yaml')
+    
+    # Save configuration
+    st.subheader("💾 Save Configuration")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        save_filename = st.text_input(
+            "Configuration File Name",
+            value="scubagoggles_config.yaml",
+            placeholder="my_config.yaml"
+        )
+    
+    with col2:
+        if st.button("💾 Download Configuration"):
+            config_yaml = yaml.dump(st.session_state.config, default_flow_style=False)
+            st.download_button(
+                label="📁 Download YAML File",
+                data=config_yaml,
+                file_name=save_filename,
+                mime="text/yaml"
+            )
+    
+    # Load configuration
+    st.subheader("📁 Load Configuration")
+    
+    uploaded_config = st.file_uploader(
+        "Upload Configuration File",
+        type=['yaml', 'yml'],
+        help="Upload a previously saved ScubaGoggles configuration file"
+    )
+    
+    if uploaded_config is not None:
+        try:
+            loaded_config = yaml.safe_load(uploaded_config)
+            
+            if st.button("🔄 Load This Configuration"):
+                st.session_state.config.update(loaded_config)
+                st.success("✅ Configuration loaded successfully!")
+                st.experimental_rerun()
+            
+            st.subheader("👀 Preview Loaded Configuration")
+            st.code(yaml.dump(loaded_config, default_flow_style=False), language='yaml')
+            
+        except Exception as e:
+            st.error(f"❌ Error loading configuration: {str(e)}")
+
+elif page == "🚀 Run Assessment":
+    st.header("🚀 Run Security Assessment")
+    
+    # Configuration validation
+    st.subheader("✅ Pre-Flight Check")
+    
+    validation_results = []
+    
+    if st.session_state.config['credentials_file']:
+        validation_results.append(("✅", "Credentials configured"))
+    else:
+        validation_results.append(("❌", "Credentials not configured"))
+    
+    if st.session_state.config['products']:
+        validation_results.append(("✅", f"{len(st.session_state.config['products'])} products selected"))
+    else:
+        validation_results.append(("❌", "No products selected"))
+    
+    if st.session_state.config['output_dir']:
+        validation_results.append(("✅", "Output directory configured"))
+    else:
+        validation_results.append(("❌", "Output directory not configured"))
+    
+    for status, message in validation_results:
+        if status == "✅":
+            st.success(f"{status} {message}")
+        else:
+            st.error(f"{status} {message}")
+    
+    ready_to_run = all(result[0] == "✅" for result in validation_results)
+    
+    if ready_to_run:
+        st.success("✅ Ready to Run Assessment - All configuration requirements are met.")
+        
+        st.subheader("📋 Assessment Summary")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Products", len(st.session_state.config['products']))
+        
+        with col2:
+            st.metric("Output Directory", st.session_state.config['output_dir'])
+        
+        with col3:
+            org_name = st.session_state.config.get('organization_name', 'Not specified')
+            st.metric("Organization", org_name if org_name else 'Not specified')
+        
+        if st.session_state.config['products']:
+            products_text = ", ".join([p.title() for p in st.session_state.config['products']])
+            st.info(f"📊 **Products to assess:** {products_text}")
+        
+        if st.button("🚀 **RUN SECURITY ASSESSMENT**"):
+            st.warning("""
+            🌐 **Browser Version Limitation**
+            
+            This is the browser-based interface running on GitHub Pages. 
+            To actually run the assessment, you'll need to:
+            
+            1. **Download your configuration** (using the Save/Load Config page)
+            2. **Install ScubaGoggles locally:** pip install scubagoggles  
+            3. **Run the assessment locally:** python -m scubagoggles --config your_config.yaml
+            
+            Or use this interface to generate the perfect configuration, then export it!
+            """)
+            
+            # Generate command
+            products_str = " ".join(st.session_state.config['products'])
+            creds_file = st.session_state.config['credentials_file']
+            output_dir = st.session_state.config['output_dir']
+            
+            command = f"""python -m scubagoggles \\
+    --credentials "{creds_file}" \\
+    --outputdir "{output_dir}" \\
+    --productnames {products_str}"""
+            
+            st.subheader("🖥️ Local Execution Command")
+            st.code(command, language='bash')
+            
+            st.subheader("📄 Configuration for Local Use")
+            config_for_local = st.session_state.config.copy()
+            st.code(yaml.dump(config_for_local, default_flow_style=False), language='yaml')
+            
+            st.download_button(
+                label="💾 Download Configuration File",
+                data=yaml.dump(config_for_local, default_flow_style=False),
+                file_name="scubagoggles_config.yaml",
+                mime="text/yaml"
+            )
+    
+    else:
+        st.warning("⚠️ Configuration Incomplete - Please complete the configuration using the sidebar menu before running the assessment.")
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666; padding: 20px;">
+    🤿 <strong>ScubaGoggles Configuration Interface</strong><br>
+    Professional Google Workspace Security Assessment Tool<br>
+</div>
+""", unsafe_allow_html=True)`
+                }
+            },
+            document.getElementById("stlite-main"),
+            {
+                onLoad: showApp,
+                onError: showError
+            }
+        );
+    </script>
 </body>
+</html>

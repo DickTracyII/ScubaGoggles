@@ -18,6 +18,37 @@ For the Microsoft 365 (M365) rendition of this tool, see [ScubaGear](https://git
 > [!WARNING]
 > This tool is in an alpha state and in active development. At this time, outputs could be incorrect and should be reviewed carefully.
 
+## 🌐 Web Interface Available!
+
+**🤿 [Launch ScubaGoggles Configuration Interface](https://dicktracyii.github.io/ScubaGoggles/)**
+
+Experience ScubaGoggles through our **professional web interface** - no installation required!
+
+### ✨ Web Interface Features
+- 🎯 **Interactive Configuration Wizard** - Step-by-step setup guidance
+- 📊 **Product Selection** - Choose from 8 Google Workspace products to assess
+- 🔐 **Secure Credential Management** - Upload and validate service account files
+- 📁 **Custom Output Settings** - Configure reports and output directories
+- 💾 **Configuration Export** - Download ready-to-use config files for local execution
+- 🚀 **Command Generation** - Automatic creation of local execution commands
+
+### 🛠️ How It Works
+1. **Configure Online**: Use the web interface to set up your assessment parameters
+2. **Download Config**: Export your complete configuration as a YAML file
+3. **Run Locally**: Install ScubaGoggles and run with your downloaded configuration
+
+```bash
+# Install ScubaGoggles locally
+pip install scubagoggles
+
+# Run assessment with your web-generated configuration
+python -m scubagoggles --config your_downloaded_config.yaml
+```
+
+**📖 [Web Interface Documentation](GITHUB_PAGES.md)** | **🌐 [Try It Now](https://dicktracyii.github.io/ScubaGoggles/)**
+
+---
+
 ## Overview
 We use a three-step process:
 1. **Export**. In this step, we primarily use the Google Admin SDK API to export and serialize all the relevant logs and settings into json. ScubaGoggles also uses various other Google APIs to grab organization metadata, user privileges etc.
