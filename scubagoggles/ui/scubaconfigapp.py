@@ -237,15 +237,6 @@ class ScubaConfigApp:
             border-radius: 6px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
-        
-        /* Section styling */
-        .section-container {{
-            background: {section_bg};
-            padding: 2rem;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }}
 
         .stMainBlockContainer {{
             padding-top: 0;
@@ -925,7 +916,7 @@ class ScubaConfigApp:
 
     def render_omit_policies_tab(self):
         """Render omit policies configuration tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        
         st.markdown('<h2 class="section-title">Omit Policies</h2>', unsafe_allow_html=True)
         
         # Context help for omit policies
@@ -1156,7 +1147,7 @@ class ScubaConfigApp:
 
     def render_annotate_policies_tab(self):
         """Render annotate policies configuration tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        
         st.markdown('<h2 class="section-title">Annotate Policies</h2>', unsafe_allow_html=True)
         
         # Context help for annotate policies
@@ -1426,7 +1417,7 @@ class ScubaConfigApp:
 
     def render_break_glass_tab(self):
         """Render break glass accounts configuration tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        
         st.markdown('<h2 class="section-title">Break Glass Accounts</h2>', unsafe_allow_html=True)
         
         st.markdown("""
@@ -1488,7 +1479,7 @@ class ScubaConfigApp:
 
     def render_advanced_tab(self):
         """Render advanced configuration tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        
         st.markdown('<h2 class="section-title">Advanced Configuration</h2>', unsafe_allow_html=True)
         
         # Authentication Settings
@@ -1609,7 +1600,7 @@ class ScubaConfigApp:
 
     def render_authentication_tab(self):
         """Render authentication configuration"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        
         st.markdown('<h2 class="section-title">Authentication Configuration</h2>', unsafe_allow_html=True)
         
         st.markdown("### 🔐 Service Account Credentials")
@@ -1648,7 +1639,7 @@ class ScubaConfigApp:
 
     def render_preview_tab(self):
         """Render configuration preview"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
+        
         st.markdown('<h2 class="section-title">Configuration Preview</h2>', unsafe_allow_html=True)
         
         # Generate clean config
@@ -1690,7 +1681,6 @@ class ScubaConfigApp:
 
     def render_run_tab(self):
         """Render run assessment tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
         st.markdown('<h2 class="section-title">Run Assessment</h2>', unsafe_allow_html=True)
         
         if SCUBAGOGGLES_AVAILABLE:
