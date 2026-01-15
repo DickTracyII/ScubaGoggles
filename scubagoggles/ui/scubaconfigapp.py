@@ -246,6 +246,10 @@ class ScubaConfigApp:
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
         }}
+
+        .stMainBlockContainer {{
+            padding-top: 0;
+        }}
         
         .section-title {{
             font-size: 1.4rem;
@@ -332,10 +336,6 @@ class ScubaConfigApp:
             background-color: #262730 !important;
         }
         
-        /* Sidebar elements */
-        .css-1d391kg, .css-1lcbmhc {
-            background-color: #262730 !important;
-        }
         
         /* Container backgrounds */
         .stContainer, [data-testid="stVerticalBlock"] > div,
@@ -421,7 +421,6 @@ class ScubaConfigApp:
         .stButton > button {{
             border-radius: 6px;
             font-weight: 500;
-            padding: 0.75rem 1.5rem;
             transition: all 0.2s ease;
         }}
         
@@ -431,7 +430,6 @@ class ScubaConfigApp:
             border: 1px solid rgba(255, 255, 255, 0.3) !important;
             color: white !important;
             font-size: 1.2rem !important;
-            padding: 0.5rem 0.75rem !important;
             min-width: 40px !important;
             height: 40px !important;
         }}
@@ -663,27 +661,36 @@ class ScubaConfigApp:
 
     def render_header(self):
         """Render the professional header"""
-        
+
         # Get current dark mode state for the toggle
         current_dark_mode = st.session_state.config_data.get('ui_dark_mode', False)
-        
-        # Create dark mode control above the header
-        col1, col2 = st.columns([9.5, 0.5])
-        
-        with col1:
-            pass  # Empty spacer
                 
-        with col2:
+        with st.container(horizontal=True, vertical_alignment='center'):
+            with st.popover('Import Configuration', type='primary'):
+                uploaded_file = st.file_uploader(
+                    "Existing YAML",
+                    type=['yaml', 'yml'],
+                    help="Import existing ScubaGoggles configuration",
+                    key="import_config_sidebar"
+                )            
+                if uploaded_file is not None:
+                    self.import_configuration(uploaded_file)
+
+            
+            st.space(size='stretch')
+            if st.button("Help"):
+                st.session_state.ui_show_help = True
+
             dark_mode_toggle = st.toggle("🌙", value=current_dark_mode, key="ui_dark_mode_toggle", help="Toggle dark mode")
             
             # Force update and rerun when toggle changes
             if dark_mode_toggle != current_dark_mode:
                 st.session_state.config_data['ui_dark_mode'] = dark_mode_toggle
                 st.rerun()
-        
+    
         # Now create header below the controls with reduced gap
         st.markdown("""
-        <div class="main-header" style="margin-top: -1rem;">
+        <div class="main-header">
             <h1 class="header-title">🤿 ScubaGoggles Configuration Editor</h1>
             <p class="header-subtitle">Create a configuration file for ScubaGoggles exclusions, annotations, and omissions baseline controls</p>
         </div>
@@ -803,8 +810,7 @@ class ScubaConfigApp:
 
     def render_main_tab(self):
         """Render the main configuration tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
-        st.markdown('<h2 class="section-title">Organization Information</h2>', unsafe_allow_html=True)
+        st.header('Organization Information', divider='gray')
 
         # Context help for main tab
         with st.expander("ℹ️ Help: Organization & Product Selection", expanded=False):
@@ -828,65 +834,52 @@ class ScubaConfigApp:
             """, unsafe_allow_html=True)
 
         # Organization Name
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("**[ℹ️] Organization Name***")
-        with col2:
-            orgname = st.text_input(
-                "Organization Name",
+        orgname = st.text_input(
+                "**Organization Name**",
                 value=st.session_state.config_data.get('orgname', ''),
                 placeholder="Department of Example",
                 help="Name of your organization",
                 key="orgname",
-                label_visibility="collapsed"
             )
-            st.session_state.config_data['orgname'] = orgname
+        st.session_state.config_data['orgname'] = orgname
 
-        # Organization Unit Name
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown("**[ℹ️] Organization Unit Name**")
-        with col2:
-            orgunitname = st.text_input(
-                "Organization Unit Name",
-                value=st.session_state.config_data.get('orgunitname', ''),
-                placeholder="Subdepartment of Example",
-                help="Name of your organizational unit (optional)",
-                key="orgunitname",
-                label_visibility="collapsed"
-            )
-            st.session_state.config_data['orgunitname'] = orgunitname
+        orgunitname = st.text_input(
+            "**Organization Unit Name**",
+            value=st.session_state.config_data.get('orgunitname', ''),
+            placeholder="Subdepartment of Example",
+            help="Name of your organizational unit (optional)",
+            key="orgunitname",
+        )
+        st.session_state.config_data['orgunitname'] = orgunitname
 
         # Description
-        st.markdown("**Description**")
         description = st.text_area(
-            "Description",
+            "**Description**",
             value=st.session_state.config_data.get('description', ''),
             placeholder="Enter a description for this configuration (optional)",
             height=100,
             key="description",
-            label_visibility="collapsed"
         )
         st.session_state.config_data['description'] = description
 
         # Product Selection Section
-        st.markdown('<h3 style="margin-top: 2rem;">Select at least one product:*</h3>', unsafe_allow_html=True)
         
         baseline_info = self.get_baseline_info()
         available_baselines = list(baseline_info.keys())
         current_selection = st.session_state.config_data.get('baselines', [])
 
         # Select All / None buttons
-        col1, col2, col3 = st.columns([1, 1, 4])
-        with col1:
+        st.header("Enabled Products", divider='gray')
+        with st.container(horizontal=True, width='stretch', vertical_alignment='center'):
+            st.text("At least one product must be selected")
+            st.space(size='stretch')
+
             if st.button("✅ Select All", key="select_all_main"):
                 st.session_state.config_data['baselines'] = available_baselines.copy()
                 # Update individual checkbox states
                 for baseline in available_baselines:
                     st.session_state[f"baseline_{baseline}"] = True
                 st.rerun()
-        
-        with col2:
             if st.button("❌ Clear All", key="clear_all_main"):
                 st.session_state.config_data['baselines'] = []
                 # Update individual checkbox states
@@ -1945,25 +1938,7 @@ class ScubaConfigApp:
     def run(self):
         """Main application entry point"""
         self.setup_page_config()
-        
-        # Add import functionality and help to sidebar
-        with st.sidebar:
-            st.markdown("### 📥 Import Config")
-            uploaded_file = st.file_uploader(
-                "Upload YAML",
-                type=['yaml', 'yml'],
-                help="Import existing ScubaGoggles configuration",
-                key="import_config_sidebar"
-            )
-            
-            if uploaded_file is not None:
-                if st.button("📥 Import", type="primary", use_container_width=True):
-                    self.import_configuration(uploaded_file)
-            
-            st.markdown("---")
-            st.markdown("### ❓ Help")
-            if st.button("📖 Show Help & Documentation", use_container_width=True):
-                st.session_state.ui_show_help = True
+
                     
         self.render_header()
         
@@ -2000,19 +1975,9 @@ class ScubaConfigApp:
             self.render_run_tab()
         
         # Status bar
-        st.markdown("---")
-        col1, col2, col3 = st.columns([2, 1, 1])
-        
-        with col1:
-            if SCUBAGOGGLES_AVAILABLE:
-                st.markdown('<span class="status-indicator status-success">✅ ScubaGoggles Available</span>', unsafe_allow_html=True)
-            else:
-                st.markdown('<span class="status-indicator status-warning">⚠️ ScubaGoggles Limited</span>', unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"**Version:** {self.version}")
-        
-        with col3:
+        st.divider()
+        with st.container(horizontal=True, horizontal_alignment='right'):
+            st.markdown(f"**ScubaGoggles Version:** {self.version}")
             st.markdown("**[GitHub Repository](https://github.com/cisagov/ScubaGoggles)**")
 
 
