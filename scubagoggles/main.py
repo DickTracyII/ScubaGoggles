@@ -501,7 +501,7 @@ def dive():
 
 
     help_msg = 'Run Config UI in browser'
-    config_parser = subparsers.add_parser('config',
+    config_parser = subparsers.add_parser('configui',
                                           description=help_msg,
                                           help=help_msg)
     get_ui_config_args(config_parser)

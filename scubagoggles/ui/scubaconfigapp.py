@@ -92,7 +92,6 @@ class ScubaConfigApp:
                 continue
                 
             try:
-                print(f"PARSE {md_file}")
                 content = md_file.read_text(encoding='utf-8')
                 baseline_name = md_file.stem.upper()
                 policies[baseline_name] = self.extract_policies_from_markdown(content, baseline_name)
@@ -138,7 +137,6 @@ class ScubaConfigApp:
                 policies[current_policy_id] = description
                 current_policy_id = None
         
-        print(f"FOR {baseline_name} extracted: {policies}")
         return policies
 
     def setup_page_config(self):
@@ -1553,27 +1551,19 @@ class ScubaConfigApp:
         # Output Settings
         st.subheader("📁 Output Settings")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            output_format = st.selectbox(
-                "Output Format",
-                ["HTML", "JSON", "Both"],
-                index=0,
-                help="Choose the format for assessment reports",
-                key="output_format"
-            )
-            st.session_state.config_data['output_format'] = output_format
-        
-        with col2:
-            output_path = st.text_input(
+        output_path = st.text_input(
                 "Output Directory",
                 value=st.session_state.config_data.get('outputpath', './'),
                 placeholder="./reports/",
                 help="Directory where reports will be saved",
                 key="output_path_advanced"
             )
-            st.session_state.config_data['outputpath'] = output_path
+        st.session_state.config_data['outputpath'] = output_path
         
+        st.divider()
+
+        st.subheader("DNS Settings")
+
         st.divider()
         
         # Execution Settings
@@ -1708,8 +1698,6 @@ class ScubaConfigApp:
         data = st.session_state.config_data
         
         # Required fields
-        if data.get('customerid'):
-            config['customerid'] = data['customerid']
         if data.get('subjectemail'):
             config['subjectemail'] = data['subjectemail']
         if data.get('orgname'):
@@ -1734,6 +1722,8 @@ class ScubaConfigApp:
             config['quiet'] = data['quiet']
         
         # Advanced configuration sections
+        if data.get('customerid'):
+            config['customerid'] = data['customerid']
         if data.get('omitpolicy'):
             config['omitpolicy'] = data['omitpolicy']
         if data.get('annotatepolicy'):
@@ -1822,8 +1812,8 @@ class ScubaConfigApp:
         # Status bar
         st.divider()
         with st.container(horizontal=True, horizontal_alignment='right'):
-            st.markdown(f"**ScubaGoggles Version:** {self.version}")
-            st.markdown("**[GitHub Repository](https://github.com/cisagov/ScubaGoggles)**")
+            st.markdown(f"**ScubaGoggles Version:** {self.version}", width='content')
+            st.markdown("**[GitHub Repository](https://github.com/cisagov/ScubaGoggles)**", width='content')
 
 
 def main():
