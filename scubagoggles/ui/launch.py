@@ -15,16 +15,7 @@ def launch_ui(arguments: argparse.Namespace):
     """Launch the ScubaGoggles UI"""
 
     # Determine which app to run
-    ui_dir = Path(__file__).parent
-
-    # Try the enhanced app first, fall back to basic app
-    app_files = [ui_dir / "scubaconfigapp.py", ui_dir / "config_generator.py"]
-
-    app_to_run = None
-    for app_file in app_files:
-        if app_file.exists():
-            app_to_run = app_file
-            break
+    app_to_run = Path(__file__).parent / 'scubaconfigapp.py'
 
     if not app_to_run:
         print("❌ No UI application found!")

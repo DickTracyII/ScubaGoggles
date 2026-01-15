@@ -998,13 +998,14 @@ class ScubaConfigApp:
                                 # Policy header with expand/collapse
                                 col1, col2 = st.columns([4, 1])
                                 with col1:
-                                    if is_omitted:
-                                        st.markdown(f"🟢 **{policy_id}** (Omitted)")
-                                    elif st.session_state.get(f"expand_omit_{policy_id}", False):
-                                        st.markdown(f"🟠 **{policy_id}** (Configuring...)")
-                                    else:
-                                        st.markdown(f"**{policy_id}**")
-                                    st.caption(description)
+                                    with st.container(gap=None):
+                                        if is_omitted:
+                                            st.markdown(f"🟢 **{policy_id}** (Omitted)")
+                                        elif st.session_state.get(f"expand_omit_{policy_id}", False):
+                                            st.markdown(f"🟠 **{policy_id}** (Configuring...)")
+                                        else:
+                                            st.markdown(f"**{policy_id}**")
+                                        st.caption(description)
                                 
                                 with col2:
                                     if is_omitted:
@@ -1241,13 +1242,14 @@ class ScubaConfigApp:
                                 # Policy header with expand/collapse
                                 col1, col2 = st.columns([4, 1])
                                 with col1:
-                                    if is_annotated:
-                                        st.markdown(f"🟢 **{policy_id}** (Annotated)")
-                                    elif st.session_state.get(f"expand_annotate_{policy_id}", False):
-                                        st.markdown(f"🟠 **{policy_id}** (Configuring...)")
-                                    else:
-                                        st.markdown(f"**{policy_id}**")
-                                    st.caption(description)
+                                    with st.container(gap=None):
+                                        if is_annotated:
+                                            st.markdown(f"🟢 **{policy_id}** (Annotated)")
+                                        elif st.session_state.get(f"expand_annotate_{policy_id}", False):
+                                            st.markdown(f"🟠 **{policy_id}** (Configuring...)")
+                                        else:
+                                            st.markdown(f"**{policy_id}**")
+                                        st.caption(description)
                                 
                                 with col2:
                                     if is_annotated:
@@ -1444,17 +1446,15 @@ class ScubaConfigApp:
         break_glass_accounts = st.session_state.config_data.get('breakglassaccounts', [])
         
         # Add new break glass account
-        st.subheader("➕ Add Break Glass Account")
-        col1, col2 = st.columns([3, 1])
-        with col1:
+        st.subheader("➕ Add Break Glass AccountSDASD")
+        with st.container(horizontal=True, vertical_alignment='bottom'):
             new_break_glass = st.text_input(
                 "Break Glass Account Email",
                 placeholder="emergency-admin@example.org",
                 help="Email address of break glass account",
-                key="new_break_glass"
+                key="new_break_glass", width='stretch'
             )
         
-        with col2:
             if st.button("➕ Add Account", type="primary"):
                 if new_break_glass and new_break_glass not in break_glass_accounts:
                     break_glass_accounts.append(new_break_glass)
@@ -1485,68 +1485,6 @@ class ScubaConfigApp:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    def render_break_glass_tab(self):
-        """Render break glass accounts configuration tab"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
-        st.markdown('<h2 class="section-title">Break Glass Accounts</h2>', unsafe_allow_html=True)
-        
-        st.markdown("""
-        **Configure super admin accounts that should be considered "break glass accounts".**
-        
-        Break glass accounts are emergency access accounts used only in critical situations and should be excluded 
-        from the overall super admin count in ScubaGoggles assessments.
-        
-        ⚠️ **Important:** These accounts should:
-        - Be used only for emergency access
-        - Have strong authentication controls
-        - Be regularly audited
-        - Have minimal day-to-day access
-        """)
-        
-        # Current break glass accounts
-        break_glass_accounts = st.session_state.config_data.get('breakglassaccounts', [])
-        
-        # Add new break glass account
-        st.subheader("➕ Add Break Glass Account")
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            new_break_glass = st.text_input(
-                "Break Glass Account Email",
-                placeholder="emergency-admin@example.org",
-                help="Email address of break glass account",
-                key="new_break_glass"
-            )
-        
-        with col2:
-            if st.button("➕ Add Account", type="primary"):
-                if new_break_glass and new_break_glass not in break_glass_accounts:
-                    break_glass_accounts.append(new_break_glass)
-                    st.session_state.config_data['breakglassaccounts'] = break_glass_accounts
-                    st.success(f"✅ Added break glass account: {new_break_glass}")
-                    st.rerun()
-                elif new_break_glass in break_glass_accounts:
-                    st.error("❌ Account already exists in list")
-                else:
-                    st.error("❌ Email address is required")
-        
-        # Display current break glass accounts
-        if break_glass_accounts:
-            st.subheader("📋 Current Break Glass Accounts")
-            for i, account in enumerate(break_glass_accounts):
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.markdown(f"🚨 **{account}**")
-                    st.caption("Emergency access account")
-                with col2:
-                    if st.button("🗑️ Remove", key=f"remove_bg_{i}"):
-                        break_glass_accounts.remove(account)
-                        st.session_state.config_data['breakglassaccounts'] = break_glass_accounts
-                        st.success(f"✅ Removed break glass account: {account}")
-                        st.rerun()
-        else:
-            st.info("ℹ️ No break glass accounts configured")
-
-        st.markdown('</div>', unsafe_allow_html=True)
 
     def render_advanced_tab(self):
         """Render advanced configuration tab"""
@@ -1558,7 +1496,7 @@ class ScubaConfigApp:
         
         auth_method = st.selectbox(
             "Authentication Method",
-            ["Service Account", "OAuth 2.0", "Application Default Credentials"],
+            ["Service Account", "OAuth 2.0"],
             index=0,
             help="Choose the authentication method for Google Workspace API access",
             key="auth_method"
@@ -1618,9 +1556,7 @@ class ScubaConfigApp:
                     st.error(f"❌ File not found: {creds_path}")
         elif auth_method == "OAuth 2.0":
             st.info("🌐 OAuth 2.0 will open a browser window for interactive authentication.")
-        else:
-            st.info("🔧 Application Default Credentials will use your environment's default authentication.")
-        
+
         st.divider()
         
         # Output Settings
@@ -1709,28 +1645,6 @@ class ScubaConfigApp:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    def render_output_tab(self):
-        """Render output configuration"""
-        st.markdown('<div class="section-container">', unsafe_allow_html=True)
-        st.markdown('<h2 class="section-title">Output Configuration</h2>', unsafe_allow_html=True)
-        
-        # Output path
-        output_path = st.text_input(
-            "📁 Output Directory",
-            value=st.session_state.config_data.get('outputpath', './'),
-            placeholder="./reports",
-            help="Directory where assessment reports will be saved"
-        )
-        st.session_state.config_data['outputpath'] = output_path
-        
-        # Dark mode
-        dark_mode = st.checkbox(
-            "🌙 Enable dark mode for reports",
-            value=st.session_state.config_data.get('darkmode', False)
-        )
-        st.session_state.config_data['darkmode'] = dark_mode
-
-        st.markdown('</div>', unsafe_allow_html=True)
 
     def render_preview_tab(self):
         """Render configuration preview"""
