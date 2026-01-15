@@ -18,9 +18,7 @@ from typing import Dict, List, Any, Optional
 import os
 
 # Add current directory to Python path to find ScubaGoggles modules
-current_dir = Path(__file__).parent.parent.parent
-if str(current_dir) not in sys.path:
-    sys.path.insert(0, str(current_dir))
+current_dir = Path(__file__).parent
 
 # Import ScubaGoggles modules
 SCUBAGOGGLES_AVAILABLE = True
@@ -84,7 +82,7 @@ class ScubaConfigApp:
     def parse_baseline_policies(self) -> Dict[str, Dict[str, str]]:
         """Parse policies from baseline markdown files"""
         policies = {}
-        baseline_dir = Path('scubagoggles/baselines')
+        baseline_dir = current_dir / '..' / 'baselines'
         
         if not baseline_dir.exists():
             return policies
@@ -94,6 +92,7 @@ class ScubaConfigApp:
                 continue
                 
             try:
+                print(f"PARSE {md_file}")
                 content = md_file.read_text(encoding='utf-8')
                 baseline_name = md_file.stem.upper()
                 policies[baseline_name] = self.extract_policies_from_markdown(content, baseline_name)
@@ -139,6 +138,7 @@ class ScubaConfigApp:
                 policies[current_policy_id] = description
                 current_policy_id = None
         
+        print(f"FOR {baseline_name} extracted: {policies}")
         return policies
 
     def setup_page_config(self):
@@ -922,65 +922,6 @@ class ScubaConfigApp:
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    def parse_baseline_policies(self) -> Dict[str, Dict[str, str]]:
-        """Parse policies from baseline markdown files"""
-        policies = {}
-        baseline_dir = Path('scubagoggles/baselines')
-        
-        if not baseline_dir.exists():
-            return policies
-        
-        for md_file in baseline_dir.glob('*.md'):
-            if md_file.name == 'README.md':
-                continue
-                
-            try:
-                content = md_file.read_text(encoding='utf-8')
-                baseline_name = md_file.stem.upper()
-                policies[baseline_name] = self.extract_policies_from_markdown(content, baseline_name)
-            except Exception as e:
-                continue  # Skip files that can't be parsed
-        
-        return policies
-    
-    def extract_policies_from_markdown(self, content: str, baseline_name: str) -> Dict[str, str]:
-        """Extract policy IDs and titles from markdown content"""
-        policies = {}
-        lines = content.split('\n')
-        
-        in_policies_section = False
-        current_policy_id = None
-        
-        for line in lines:
-            line = line.strip()
-            
-            # Check if we're entering the policies section
-            if line == '### Policies':
-                in_policies_section = True
-                continue
-            
-            # Check if we're leaving the policies section
-            if in_policies_section and line.startswith('### ') and line != '### Policies':
-                in_policies_section = False
-                continue
-            
-            # Extract policy IDs
-            if in_policies_section and line.startswith('#### GWS.'):
-                # Extract policy ID (remove #### and any trailing text)
-                policy_id = line.replace('#### ', '').split()[0]
-                current_policy_id = policy_id
-                
-                # Get the next line which should contain the policy description
-                continue
-            
-            # Get policy description (first line after policy ID)
-            if in_policies_section and current_policy_id and not line.startswith('#') and line:
-                # Clean up the description
-                description = line.rstrip('.')
-                policies[current_policy_id] = description
-                current_policy_id = None
-        
-        return policies
 
     def render_omit_policies_tab(self):
         """Render omit policies configuration tab"""
