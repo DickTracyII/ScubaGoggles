@@ -193,6 +193,7 @@ import yaml
 from typing import Dict, Any, List
 import os
 from datetime import date
+import datetime
 import json
 
 # Configure page
@@ -594,20 +595,59 @@ with tab2:
                         with col2:
                             is_omitted = policy_id in st.session_state.config.get('omitpolicy', {})
                             
-                            if st.button("Omit" if not is_omitted else "Include", 
-                                       key=f"omit_{policy_id}",
-                                       type="secondary" if not is_omitted else "primary",
-                                       use_container_width=True):
-                                if is_omitted:
-                                    del st.session_state.config['omitpolicy'][policy_id]
-                                else:
+                            if not is_omitted:
+                                if st.button("Omit", 
+                                           key=f"omit_{policy_id}",
+                                           type="secondary",
+                                           use_container_width=True):
+                                    # Initialize omit policy with default values
                                     if 'omitpolicy' not in st.session_state.config:
                                         st.session_state.config['omitpolicy'] = {}
                                     st.session_state.config['omitpolicy'][policy_id] = {
                                         'rationale': 'Manual configuration - please update rationale',
                                         'expiration': '2025-12-31'
                                     }
-                                st.experimental_rerun()
+                                    st.experimental_rerun()
+                            else:
+                                # Show edit form for omitted policy
+                                with st.expander(f"Edit Omission - {policy_id}", expanded=False):
+                                    current_config = st.session_state.config['omitpolicy'][policy_id]
+                                    
+                                    # Rationale input
+                                    rationale = st.text_area(
+                                        "Rationale (Required)",
+                                        value=current_config.get('rationale', ''),
+                                        placeholder="Explain why this policy is being omitted...",
+                                        key=f"rationale_{policy_id}",
+                                        height=100
+                                    )
+                                    
+                                    # Expiration date input
+                                    import datetime
+                                    try:
+                                        current_date = datetime.datetime.strptime(current_config.get('expiration', '2025-12-31'), '%Y-%m-%d').date()
+                                    except:
+                                        current_date = datetime.date(2025, 12, 31)
+                                    
+                                    expiration_date = st.date_input(
+                                        "Expiration Date",
+                                        value=current_date,
+                                        key=f"expiration_{policy_id}"
+                                    )
+                                    
+                                    col_update, col_remove = st.columns(2)
+                                    with col_update:
+                                        if st.button("Update", key=f"update_omit_{policy_id}", type="primary"):
+                                            st.session_state.config['omitpolicy'][policy_id] = {
+                                                'rationale': rationale,
+                                                'expiration': expiration_date.strftime('%Y-%m-%d')
+                                            }
+                                            st.experimental_rerun()
+                                    
+                                    with col_remove:
+                                        if st.button("Remove Omission", key=f"remove_omit_{policy_id}", type="secondary"):
+                                            del st.session_state.config['omitpolicy'][policy_id]
+                                            st.experimental_rerun()
     
     # Show omitted policies summary
     omitted_policies = st.session_state.config.get('omitpolicy', {})
@@ -666,21 +706,76 @@ with tab3:
         
         with col2:
             if selected_policy:
+                st.subheader("Annotation Details")
+                
+                # Check if policy already has annotation
+                existing_annotation = st.session_state.config.get('AnnotatePolicy', {}).get(selected_policy, {})
+                
+                # Comment input
                 annotation_text = st.text_area(
-                    "Annotation",
+                    "Comment",
+                    value=existing_annotation.get('comment', ''),
                     placeholder="Enter your annotation or note for this policy...",
                     height=100,
-                    key="new_annotation_text"
+                    key="annotation_comment_text"
                 )
                 
-                if st.button("💾 Add Annotation", type="primary") and annotation_text.strip():
-                    if 'AnnotatePolicy' not in st.session_state.config:
-                        st.session_state.config['AnnotatePolicy'] = {}
-                    st.session_state.config['AnnotatePolicy'][selected_policy] = {
-                        'comment': annotation_text.strip()
-                    }
-                    st.success(f"✅ Annotation added for {selected_policy}")
-                    st.experimental_rerun()
+                # Incorrect result checkbox
+                incorrect_result = st.checkbox(
+                    "Mark as Incorrect Result",
+                    value=existing_annotation.get('incorrectresult', False),
+                    help="Check this if the policy assessment result is known to be incorrect",
+                    key="annotation_incorrect_result"
+                )
+                
+                # Remediation date input
+                remediation_date = None
+                if st.checkbox("Set Remediation Date", 
+                             value=bool(existing_annotation.get('remediationdate')),
+                             key="has_remediation_date"):
+                    import datetime
+                    try:
+                        current_date = datetime.datetime.strptime(existing_annotation.get('remediationdate', '2025-12-31'), '%Y-%m-%d').date()
+                    except:
+                        current_date = datetime.date(2025, 12, 31)
+                    
+                    remediation_date = st.date_input(
+                        "Remediation Date",
+                        value=current_date,
+                        help="Target date for policy remediation",
+                        key="annotation_remediation_date"
+                    )
+                
+                # Action buttons
+                col_save, col_delete = st.columns(2)
+                
+                with col_save:
+                    if st.button("💾 Save Annotation", type="primary", key="save_annotation_btn"):
+                        if annotation_text.strip() or incorrect_result or remediation_date:
+                            if 'AnnotatePolicy' not in st.session_state.config:
+                                st.session_state.config['AnnotatePolicy'] = {}
+                            
+                            # Build annotation config
+                            annotation_config = {}
+                            if annotation_text.strip():
+                                annotation_config['comment'] = annotation_text.strip()
+                            if incorrect_result:
+                                annotation_config['incorrectresult'] = True
+                            if remediation_date:
+                                annotation_config['remediationdate'] = remediation_date.strftime('%Y-%m-%d')
+                            
+                            st.session_state.config['AnnotatePolicy'][selected_policy] = annotation_config
+                            st.success(f"✅ Annotation saved for {selected_policy}")
+                            st.experimental_rerun()
+                        else:
+                            st.error("Please provide at least one annotation field")
+                
+                with col_delete:
+                    if selected_policy in st.session_state.config.get('AnnotatePolicy', {}):
+                        if st.button("🗑️ Delete", type="secondary", key="delete_annotation_btn"):
+                            del st.session_state.config['AnnotatePolicy'][selected_policy]
+                            st.success(f"Annotation deleted for {selected_policy}")
+                            st.experimental_rerun()
         
         # Show existing annotations
         existing_annotations = st.session_state.config.get('annotatepolicy', {})

@@ -28,16 +28,16 @@ def main():
             break
     
     if not app_to_run:
-        print("❌ No UI application found!")
+        print("No UI application found!")
         print("Please ensure the UI modules are properly installed.")
         sys.exit(1)
     
     # Check if streamlit is available
     try:
         import streamlit
-        print(f"🤿 Starting ScubaGoggles Configuration UI...")
-        print(f"📱 Using: {app_to_run.name}")
-        print(f"🌐 Opening in your default browser...")
+        print(f"Starting ScubaGoggles Configuration UI...")
+        print(f"Using: {app_to_run.name}")
+        print(f"Opening in your default browser...")
         
         # Launch Streamlit
         cmd = [
@@ -51,16 +51,16 @@ def main():
         subprocess.run(cmd)
         
     except ImportError:
-        print("❌ Streamlit is not installed!")
-        print("📦 Please install UI requirements:")
-        print("    pip install -r requirements-ui.txt")
-        print("📦 Or install streamlit directly:")
-        print("    pip install streamlit")
+        print("Streamlit is not installed!")
+        print("Please install UI requirements:")
+        print("  pip install -r requirements-ui.txt")
+        print("Or install streamlit directly:")
+        print("  pip install streamlit")
         sys.exit(1)
     except KeyboardInterrupt:
-        print("\n👋 ScubaGoggles UI stopped by user")
+        print("\nScubaGoggles UI stopped by user")
     except Exception as e:
-        print(f"❌ Error starting UI: {e}")
+        print(f"Error starting UI: {e}")
         sys.exit(1)
 
 

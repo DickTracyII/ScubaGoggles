@@ -329,11 +329,11 @@ class ScubaConfigApp:
         
         /* Section styling */
         .section-container {{
-            background: {section_bg};
-            padding: 2rem;
-            border-radius: 0 0 8px 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            margin-bottom: 0;
         }}
         
         .section-title {{
@@ -426,6 +426,48 @@ class ScubaConfigApp:
             background-color: #262730 !important;
         }
         
+        /* Sidebar - comprehensive styling for dark mode */
+        [data-testid="stSidebar"] {
+            background-color: #1f2937 !important;
+        }
+        
+        [data-testid="stSidebar"] * {
+            color: #fafafa !important;
+        }
+        
+        [data-testid="stSidebar"] .stMarkdown {
+            color: #fafafa !important;
+        }
+        
+        [data-testid="stSidebar"] .stMarkdown h1,
+        [data-testid="stSidebar"] .stMarkdown h2,
+        [data-testid="stSidebar"] .stMarkdown h3,
+        [data-testid="stSidebar"] .stMarkdown h4,
+        [data-testid="stSidebar"] .stMarkdown h5,
+        [data-testid="stSidebar"] .stMarkdown h6 {
+            color: #fafafa !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button {
+            background-color: #374151 !important;
+            color: #fafafa !important;
+            border-color: #6b7280 !important;
+        }
+        
+        [data-testid="stSidebar"] .stButton > button:hover {
+            background-color: #4b5563 !important;
+            border-color: #9ca3af !important;
+        }
+        
+        [data-testid="stSidebar"] hr {
+            border-color: #4b5563 !important;
+        }
+        
+        /* Sidebar section */
+        section[data-testid="stSidebar"] > div {
+            background-color: #1f2937 !important;
+        }
+        
         /* Container backgrounds */
         .stContainer, [data-testid="stVerticalBlock"] > div,
         [data-testid="stHorizontalBlock"] > div {
@@ -442,6 +484,60 @@ class ScubaConfigApp:
         .stDataFrame, [data-testid="stDataFrame"] {
             background-color: #374151 !important;
             color: #fafafa !important;
+        }
+        
+        /* File uploader styling for dark mode */
+        [data-testid="stFileUploader"] {
+            background-color: #374151 !important;
+        }
+        
+        [data-testid="stFileUploader"] section {
+            background-color: #374151 !important;
+            border-color: #6b7280 !important;
+        }
+        
+        [data-testid="stFileUploader"] section > div {
+            background-color: #374151 !important;
+            color: #fafafa !important;
+        }
+        
+        [data-testid="stFileUploader"] small {
+            color: #d1d5db !important;
+        }
+        
+        [data-testid="stFileUploader"] label {
+            color: #fafafa !important;
+        }
+        
+        .stFileUploader > div > div {
+            background-color: #374151 !important;
+            border-color: #6b7280 !important;
+        }
+        
+        .stFileUploader label, .stFileUploader small, .stFileUploader span {
+            color: #fafafa !important;
+        }
+        
+        /* File uploader button - Browse files */
+        [data-testid="stFileUploader"] button {
+            background-color: #4b5563 !important;
+            color: #fafafa !important;
+            border: 1px solid #6b7280 !important;
+        }
+        
+        [data-testid="stFileUploader"] button:hover {
+            background-color: #6b7280 !important;
+            border-color: #9ca3af !important;
+        }
+        
+        /* File uploader section background */
+        [data-testid="stFileUploader"] section[data-testid="stFileUploadDropzone"] {
+            background-color: #374151 !important;
+            border: 2px dashed #6b7280 !important;
+        }
+        
+        [data-testid="stFileUploader"] section[data-testid="stFileUploadDropzone"]:hover {
+            border-color: #9ca3af !important;
         }
         '''}
         
@@ -646,10 +742,17 @@ class ScubaConfigApp:
             color: #3d5b96;
         }}
         
-        /* Hide Streamlit default elements */
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        .stDeployButton {{display: none;}}
+        /* Hide Streamlit default elements - multiple selectors for compatibility */
+        #MainMenu {{display: none !important;}}
+        footer {{display: none !important;}}
+        .stDeployButton {{display: none !important;}}
+        button[kind="header"] {{display: none !important;}}
+        [data-testid="stToolbar"] {{display: none !important;}}
+        .stActionButton {{display: none !important;}}
+        header {{
+            background: transparent !important;
+        }}
+        header > div:last-child {{display: none !important;}}
         </style>
         """
 
@@ -667,10 +770,13 @@ class ScubaConfigApp:
             # Import basic organization fields
             if 'orgname' in config:
                 st.session_state.config_data['orgname'] = config['orgname']
+                st.session_state['orgname'] = config['orgname']  # Update widget key
             if 'orgunitname' in config:
                 st.session_state.config_data['orgunitname'] = config['orgunitname']
-            if 'description' in config:
-                st.session_state.config_data['description'] = config['description']
+                st.session_state['orgunitname'] = config['orgunitname']  # Update widget key
+            if 'Description' in config:
+                st.session_state.config_data['description'] = config['Description']
+                st.session_state['description'] = config['Description']  # Update widget key
             
             # Import authentication fields
             if 'customerid' in config:
@@ -689,13 +795,21 @@ class ScubaConfigApp:
                 elif not isinstance(baselines, list):
                     baselines = []
                 
-                st.session_state.config_data['baselines'] = baselines
+                # Filter out any baselines that don't exist in our baseline info
+                baseline_info = self.get_baseline_info()
+                valid_baselines = [b for b in baselines if b in baseline_info]
+                invalid_baselines = [b for b in baselines if b not in baseline_info]
+                
+                st.session_state.config_data['baselines'] = valid_baselines
                 
                 # Update individual checkbox states for UI consistency
-                baseline_info = self.get_baseline_info()
                 available_baselines = list(baseline_info.keys())
                 for baseline in available_baselines:
-                    st.session_state[f"baseline_{baseline}"] = baseline in baselines
+                    st.session_state[f"baseline_{baseline}"] = baseline in valid_baselines
+                
+                # Warn about invalid baselines
+                if invalid_baselines:
+                    st.warning(f"⚠️ **Skipped unknown baselines:** {', '.join(invalid_baselines)}")
             
             # Import output settings
             if 'outputpath' in config:
@@ -714,8 +828,8 @@ class ScubaConfigApp:
             if 'omitpolicy' in config and isinstance(config['omitpolicy'], dict):
                 st.session_state.config_data['omitpolicy'] = config['omitpolicy']
             
-            if 'annotatepolicy' in config and isinstance(config['annotatepolicy'], dict):
-                st.session_state.config_data['annotatepolicy'] = config['annotatepolicy']
+            if 'AnnotatePolicy' in config and isinstance(config['AnnotatePolicy'], dict):
+                st.session_state.config_data['annotatepolicy'] = config['AnnotatePolicy']
             
             if 'breakglassaccounts' in config:
                 breakglass = config['breakglassaccounts']
@@ -801,7 +915,6 @@ class ScubaConfigApp:
         4. **Break Glass:** Configure emergency access accounts
         5. **Advanced:** Set output paths and advanced options
         6. **Preview:** Review your configuration before saving
-        7. **Run:** Generate config file or run assessment
         """)
         
         st.markdown("## 📋 Tab Documentation")
@@ -887,6 +1000,11 @@ class ScubaConfigApp:
                 'icon': '🎓',
                 'title': 'Classroom',
                 'description': 'Educational platform security and privacy controls'
+            },
+            'gemini': {
+                'icon': '🤖',
+                'title': 'Gemini',
+                'description': 'AI-powered features and data processing controls'
             }
         }
 
@@ -1013,7 +1131,16 @@ class ScubaConfigApp:
         # Products supporting exclusions note
         if current_selection:
             total_policies = sum(len(self.available_policies.get(b.upper(), {})) for b in current_selection)
-            st.info("📝 **Products selected:** " + ", ".join([baseline_info[b]['title'] for b in current_selection]))
+            # Filter out baselines that don't exist in baseline_info to prevent KeyError
+            valid_baselines = [b for b in current_selection if b in baseline_info]
+            invalid_baselines = [b for b in current_selection if b not in baseline_info]
+            
+            if valid_baselines:
+                st.info("📝 **Products selected:** " + ", ".join([baseline_info[b]['title'] for b in valid_baselines]))
+            
+            if invalid_baselines:
+                st.warning(f"⚠️ **Unknown baselines imported:** {', '.join(invalid_baselines)}")
+            
             st.success(f"✅ Selected {len(current_selection)} products with {total_policies} policies total")
 
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1950,7 +2077,7 @@ class ScubaConfigApp:
         if data.get('orgunitname'):
             config['orgunitname'] = data['orgunitname']
         if data.get('description'):
-            config['description'] = data['description']
+            config['Description'] = data['description']
         
         # Output settings
         if data.get('outputpath') and data['outputpath'] != './':
@@ -1964,7 +2091,7 @@ class ScubaConfigApp:
         if data.get('omitpolicy'):
             config['omitpolicy'] = data['omitpolicy']
         if data.get('annotatepolicy'):
-            config['annotatepolicy'] = data['annotatepolicy']
+            config['AnnotatePolicy'] = data['annotatepolicy']
         if data.get('breakglassaccounts'):
             config['breakglassaccounts'] = data['breakglassaccounts']
         
@@ -2002,12 +2129,6 @@ class ScubaConfigApp:
         st.info("🧪 Testing configuration...")
         # Add configuration testing logic here
         st.success("✅ Configuration test passed!")
-
-    def run_assessment(self):
-        """Run ScubaGoggles assessment"""
-        st.info("🚀 Starting ScubaGoggles assessment...")
-        # Add assessment execution logic here
-        st.success("✅ Assessment completed!")
 
     def run(self):
         """Main application entry point"""
@@ -2067,11 +2188,8 @@ class ScubaConfigApp:
         col1, col2, col3 = st.columns([2, 1, 1])
         
         with col1:
-            if SCUBAGOGGLES_AVAILABLE:
-                st.markdown('<span class="status-indicator status-success">✅ ScubaGoggles Available</span>', unsafe_allow_html=True)
-            else:
-                st.markdown('<span class="status-indicator status-warning">⚠️ ScubaGoggles Limited</span>', unsafe_allow_html=True)
-        
+            st.markdown('<span class="status-indicator status-success">✅ ScubaGoggles</span>', unsafe_allow_html=True)
+           
         with col2:
             st.markdown(f"**Version:** {self.version.version}")
         
